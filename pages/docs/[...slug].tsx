@@ -1,4 +1,5 @@
 import { GetStaticPaths, GetStaticProps } from "next";
+import Head from "next/head";
 import { MDXRemote, MDXRemoteSerializeResult } from "next-mdx-remote";
 import { serialize } from "next-mdx-remote/serialize";
 import remarkGfm from "remark-gfm";
@@ -15,6 +16,7 @@ interface DocPageProps {
   frontMatter: {
     title: string;
     desc?: string;
+    label?: string;
   };
   content: MDXRemoteSerializeResult;
 }
@@ -47,16 +49,34 @@ const components = {
 };
 
 export default function DocPage({ frontMatter, content }: DocPageProps) {
+  const pageTitle = frontMatter.label
+    ? `${frontMatter.label} - ${frontMatter.title} | Payload CMS Documentation`
+    : `${frontMatter.title} | Payload CMS Documentation`;
+
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <h1 className="text-4xl font-bold mb-4">{frontMatter.title}</h1>
-      {frontMatter.desc && (
-        <p className="text-xl text-gray-600 mb-8">{frontMatter.desc}</p>
-      )}
-      <div className="prose prose-lg max-w-none">
-        <MDXRemote {...content} components={components} />
+    <>
+      <Head>
+        <title>{pageTitle}</title>
+        <meta
+          name="description"
+          content={frontMatter.desc || frontMatter.title}
+        />
+        <meta property="og:title" content={pageTitle} />
+        <meta
+          property="og:description"
+          content={frontMatter.desc || frontMatter.title}
+        />
+      </Head>
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <h1 className="text-4xl font-bold mb-4">{frontMatter.title}</h1>
+        {frontMatter.desc && (
+          <p className="text-xl text-gray-600 mb-8">{frontMatter.desc}</p>
+        )}
+        <div className="prose prose-lg max-w-none">
+          <MDXRemote {...content} components={components} />
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
