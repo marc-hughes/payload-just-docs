@@ -3,6 +3,7 @@ import { MDXRemote, MDXRemoteSerializeResult } from "next-mdx-remote";
 import { serialize } from "next-mdx-remote/serialize";
 import remarkGfm from "remark-gfm";
 import { getAllDocPaths, getDocBySlug } from "../../lib/docs";
+import { withBasePath } from "../../lib/utils";
 import Banner from "../../components/Banner";
 import MDXTable from "../../components/MDXTable";
 import YouTube from "../../components/YouTube";
@@ -18,6 +19,15 @@ interface DocPageProps {
   content: MDXRemoteSerializeResult;
 }
 
+// Transform any internal links in MDX content to include base path
+const transformLink = (props: any) => {
+  const href = props.href || "";
+  if (href.startsWith("/")) {
+    return <a {...props} href={withBasePath(href)} />;
+  }
+  return <a {...props} />;
+};
+
 // MDX components configuration
 const components = {
   Banner,
@@ -32,6 +42,8 @@ const components = {
   tr: MDXTable.tr,
   thead: MDXTable.thead,
   tbody: MDXTable.tbody,
+  // Add link transformation
+  a: transformLink,
 };
 
 export default function DocPage({ frontMatter, content }: DocPageProps) {

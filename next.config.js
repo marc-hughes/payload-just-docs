@@ -13,6 +13,8 @@ const nextConfig = {
     images: {
         unoptimized: true,
     },
+    basePath: process.env.NODE_ENV === 'production' ? '/payload-just-docs' : '',
+    assetPrefix: process.env.NODE_ENV === 'production' ? '/payload-just-docs/' : '',
 }
 
 module.exports = withMDX(nextConfig) 
