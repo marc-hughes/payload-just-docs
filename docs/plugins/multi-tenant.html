@@ -1,0 +1,296 @@
+<!DOCTYPE html><html><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width"/><meta name="next-head-count" content="2"/><link rel="preload" href="/_next/static/css/adeeaed65336a824.css" as="style" crossorigin=""/><link rel="stylesheet" href="/_next/static/css/adeeaed65336a824.css" crossorigin="" data-n-g=""/><noscript data-n-css=""></noscript><script defer="" crossorigin="" nomodule="" src="/_next/static/chunks/polyfills-c67a75d1b6f99dc8.js"></script><script src="/_next/static/chunks/webpack-fd8027ecb5121007.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/framework-fae63b21a27d6472.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/main-04104d75f6814829.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/pages/_app-2747846ed27f1501.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/pages/docs/%5B...slug%5D-e023289636109d90.js" defer="" crossorigin=""></script><script src="/_next/static/rEpVRygLyV6yJ0i_Ohw0C/_buildManifest.js" defer="" crossorigin=""></script><script src="/_next/static/rEpVRygLyV6yJ0i_Ohw0C/_ssgManifest.js" defer="" crossorigin=""></script></head><body><div id="__next"><div class="container mx-auto px-4 py-8 max-w-4xl"><h1 class="text-4xl font-bold mb-4">Multi-Tenant Plugin</h1><p class="text-xl text-gray-600 mb-8">Scaffolds multi-tenancy for your Payload application</p><div class="prose prose-lg max-w-none"><p><img src="https://img.shields.io/npm/v/@payloadcms/plugin-multi-tenant" alt="https://www.npmjs.com/package/@payloadcms/plugin-multi-tenant"/></p>
+<p>This plugin sets up multi-tenancy for your application from within your <a href="../admin/overview">Admin Panel</a>. It does so by adding a <code>tenant</code> field to all specified collections. Your front-end application can then query data by tenant. You must add the Tenants collection so you control what fields are available for each tenant.</p>
+<div class="p-4 my-4 rounded-lg border bg-blue-50 border-blue-200 text-blue-800"><svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg><p>This plugin is completely open-source and the <a href="https://github.com/payloadcms/payload/tree/main/packages/plugin-multi-tenant">source code can be found
+here</a>.
+If you need help, check out our <a href="https://payloadcms.com/community-help">Community
+Help</a>. If you think you&#x27;ve found a bug,
+please <a href="https://github.com/payloadcms/payload/issues/new?assignees=&amp;labels=plugin%3A%multi-tenant&amp;template=bug_report.md&amp;title=plugin-multi-tenant%3A">open a new
+issue</a>
+with as much detail as possible.</p></div>
+<h2>Core features</h2>
+<ul>
+<li>Adds a <code>tenant</code> field to each specified collection</li>
+<li>Adds a tenant selector to the admin panel, allowing you to switch between tenants</li>
+<li>Filters list view results by selected tenant</li>
+<li>Filters relationship fields by selected tenant</li>
+<li>Ability to create &quot;global&quot; like collections, 1 doc per tenant</li>
+<li>Automatically assign a tenant to new documents</li>
+</ul>
+<div class="p-4 my-4 rounded-lg border bg-red-50 border-red-200 text-red-800"><svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg><p><strong>Warning</strong></p><p>By default this plugin cleans up documents when a tenant is deleted. You should ensure you have
+strong access control on your tenants collection to prevent deletions by unauthorized users.</p><p>You can disabled this behavior by setting <code>cleanupAfterTenantDelete</code> to <code>false</code> in the plugin options.</p></div>
+<h2>Installation</h2>
+<p>Install the plugin using any JavaScript package manager like <a href="https://pnpm.io">pnpm</a>, <a href="https://npmjs.com">npm</a>, or <a href="https://yarnpkg.com">Yarn</a>:</p>
+<pre><code class="language-bash">  pnpm add @payloadcms/plugin-multi-tenant
+</code></pre>
+<h3>Options</h3>
+<p>The plugin accepts an object with the following properties:</p>
+<pre><code class="language-ts">type MultiTenantPluginConfig&lt;ConfigTypes = unknown&gt; = {
+  /**
+   * After a tenant is deleted, the plugin will attempt to clean up related documents
+   * - removing documents with the tenant ID
+   * - removing the tenant from users
+   *
+   * @default true
+   */
+  cleanupAfterTenantDelete?: boolean
+  /**
+   * Automatically
+   */
+  collections: {
+    [key in CollectionSlug]?: {
+      /**
+       * Set to `true` if you want the collection to behave as a global
+       *
+       * @default false
+       */
+      isGlobal?: boolean
+      /**
+       * Set to `false` if you want to manually apply the baseListFilter
+       *
+       * @default true
+       */
+      useBaseListFilter?: boolean
+      /**
+       * Set to `false` if you want to handle collection access manually without the multi-tenant constraints applied
+       *
+       * @default true
+       */
+      useTenantAccess?: boolean
+    }
+  }
+  /**
+   * Enables debug mode
+   * - Makes the tenant field visible in the admin UI within applicable collections
+   *
+   * @default false
+   */
+  debug?: boolean
+  /**
+   * Enables the multi-tenant plugin
+   *
+   * @default true
+   */
+  enabled?: boolean
+  /**
+   * Field configuration for the field added to all tenant enabled collections
+   */
+  tenantField?: {
+    access?: RelationshipField[&#x27;access&#x27;]
+    /**
+     * The name of the field added to all tenant enabled collections
+     *
+     * @default &#x27;tenant&#x27;
+     */
+    name?: string
+  }
+  /**
+   * Field configuration for the field added to the users collection
+   *
+   * If `includeDefaultField` is `false`, you must include the field on your users collection manually
+   * This is useful if you want to customize the field or place the field in a specific location
+   */
+  tenantsArrayField?:
+    | {
+        /**
+         * Access configuration for the array field
+         */
+        arrayFieldAccess?: ArrayField[&#x27;access&#x27;]
+        /**
+         * Name of the array field
+         *
+         * @default &#x27;tenants&#x27;
+         */
+        arrayFieldName?: string
+        /**
+         * Name of the tenant field
+         *
+         * @default &#x27;tenant&#x27;
+         */
+        arrayTenantFieldName?: string
+        /**
+         * When `includeDefaultField` is `true`, the field will be added to the users collection automatically
+         */
+        includeDefaultField?: true
+        /**
+         * Additional fields to include on the tenants array field
+         */
+        rowFields?: Field[]
+        /**
+         * Access configuration for the tenant field
+         */
+        tenantFieldAccess?: RelationshipField[&#x27;access&#x27;]
+      }
+    | {
+        arrayFieldAccess?: never
+        arrayFieldName?: string
+        arrayTenantFieldName?: string
+        /**
+         * When `includeDefaultField` is `false`, you must include the field on your users collection manually
+         */
+        includeDefaultField?: false
+        rowFields?: never
+        tenantFieldAccess?: never
+      }
+  /**
+   * Customize tenant selector label
+   *
+   * Either a string or an object where the keys are i18n codes and the values are the string labels
+   */
+  tenantSelectorLabel?:
+    | Partial&lt;{
+        [key in AcceptedLanguages]?: string
+      }&gt;
+    | string
+  /**
+   * The slug for the tenant collection
+   *
+   * @default &#x27;tenants&#x27;
+   */
+  tenantsSlug?: string
+  /**
+   * Function that determines if a user has access to _all_ tenants
+   *
+   * Useful for super-admin type users
+   */
+  userHasAccessToAllTenants?: (
+    user: ConfigTypes extends { user: unknown } ? ConfigTypes[&#x27;user&#x27;] : User,
+  ) =&gt; boolean
+  /**
+   * Opt out of adding access constraints to the tenants collection
+   */
+  useTenantsCollectionAccess?: boolean
+  /**
+   * Opt out including the baseListFilter to filter tenants by selected tenant
+   */
+  useTenantsListFilter?: boolean
+  /**
+   * Opt out including the baseListFilter to filter users by selected tenant
+   */
+  useUsersTenantFilter?: boolean
+}
+</code></pre>
+<h2>Basic Usage</h2>
+<p>In the <code>plugins</code> array of your <a href="https://payloadcms.com/docs/configuration/overview">Payload Config</a>, call the plugin with <a href="#options">options</a>:</p>
+<pre><code class="language-ts">import { buildConfig } from &#x27;payload&#x27;
+import { multiTenantPlugin } from &#x27;@payloadcms/plugin-multi-tenant&#x27;
+import type { Config } from &#x27;./payload-types&#x27;
+
+const config = buildConfig({
+  collections: [
+    {
+      slug: &#x27;tenants&#x27;,
+      admin: {
+        useAsTitle: &#x27;name&#x27;
+      }
+      fields: [
+        // remember, you own these fields
+        // these are merely suggestions/examples
+        {
+        name: &#x27;name&#x27;,
+        type: &#x27;text&#x27;,
+        required: true,
+        },
+        {
+          name: &#x27;slug&#x27;,
+          type: &#x27;text&#x27;,
+          required: true,
+        },
+        {
+          name: &#x27;domain&#x27;,
+          type: &#x27;text&#x27;,
+          required: true,
+        }
+      ],
+    },
+  ],
+  plugins: [
+    multiTenantPlugin&lt;Config&gt;({
+      collections: {
+        pages: {},
+        navigation: {
+          isGlobal: true,
+        }
+      },
+    }),
+  ],
+})
+
+export default config
+</code></pre>
+<h2>Front end usage</h2>
+<p>The plugin scaffolds out everything you will need to separate data by tenant. You can use the <code>tenant</code> field to filter data from enabled collections in your front-end application.</p>
+<p>In your frontend you can query and constrain data by tenant with the following:</p>
+<pre><code class="language-tsx">const pagesBySlug = await payload.find({
+  collection: &#x27;pages&#x27;,
+  depth: 1,
+  draft: false,
+  limit: 1000,
+  overrideAccess: false,
+  where: {
+    // your constraint would depend on the
+    // fields you added to the tenants collection
+    // here we are assuming a slug field exists
+    // on the tenant collection, like in the example above
+    &#x27;tenant.slug&#x27;: {
+      equals: &#x27;gold&#x27;,
+    },
+  },
+})
+</code></pre>
+<h3>NextJS rewrites</h3>
+<p>Using NextJS rewrites and this route structure <code>/[tenantDomain]/[slug]</code>, we can rewrite routes specifically for domains requested:</p>
+<pre><code class="language-ts">async rewrites() {
+  return [
+    {
+      source: &#x27;/((?!admin|api)):path*&#x27;,
+      destination: &#x27;/:tenantDomain/:path*&#x27;,
+      has: [
+        {
+          type: &#x27;host&#x27;,
+          value: &#x27;(?&lt;tenantDomain&gt;.*)&#x27;,
+        },
+      ],
+    },
+  ];
+}
+</code></pre>
+<h3>React Hooks</h3>
+<p>Below are the hooks exported from the plugin that you can import into your own custom components to consume.</p>
+<h4>useTenantSelection</h4>
+<p>You can import this like so:</p>
+<pre><code class="language-tsx">import { useTenantSelection } from &#x27;@payloadcms/plugin-multi-tenant/client&#x27;
+
+...
+
+const tenantContext = useTenantSelection()
+</code></pre>
+<p>The hook returns the following context:</p>
+<pre><code class="language-ts">type ContextType = {
+  /**
+   * Array of options to select from
+   */
+  options: OptionObject[]
+  /**
+   * The currently selected tenant ID
+   */
+  selectedTenantID: number | string | undefined
+  /**
+   * Prevents a refresh when the tenant is changed
+   *
+   * If not switching tenants while viewing a &quot;global&quot;, set to true
+   */
+  setPreventRefreshOnChange: React.Dispatch&lt;React.SetStateAction&lt;boolean&gt;&gt;
+  /**
+   * Sets the selected tenant ID
+   *
+   * @param args.id - The ID of the tenant to select
+   * @param args.refresh - Whether to refresh the page after changing the tenant
+   */
+  setTenant: (args: {
+    id: number | string | undefined
+    refresh?: boolean
+  }) =&gt; void
+}
+</code></pre>
+<h2>Examples</h2>
+<p>The <a href="https://github.com/payloadcms/payload/tree/main/examples">Examples Directory</a> also contains an official <a href="https://github.com/payloadcms/payload/tree/main/examples/multi-tenant">Multi-Tenant</a> example.</p></div></div></div><script id="__NEXT_DATA__" type="application/json" crossorigin="">{"props":{"pageProps":{"frontMatter":{"title":"Multi-Tenant Plugin","label":"Multi-Tenant","order":40,"desc":"Scaffolds multi-tenancy for your Payload application","keywords":"plugins, multi-tenant, multi-tenancy, plugin, payload, cms, seo, indexing, search, search engine"},"content":{"compiledSource":"/*@jsxRuntime automatic @jsxImportSource react*/\nconst {Fragment: _Fragment, jsx: _jsx, jsxs: _jsxs} = arguments[0];\nconst {useMDXComponents: _provideComponents} = arguments[0];\nfunction _createMdxContent(props) {\n  const _components = Object.assign({\n    p: \"p\",\n    img: \"img\",\n    a: \"a\",\n    code: \"code\",\n    h2: \"h2\",\n    ul: \"ul\",\n    li: \"li\",\n    strong: \"strong\",\n    pre: \"pre\",\n    h3: \"h3\",\n    h4: \"h4\"\n  }, _provideComponents(), props.components), {Banner} = _components;\n  if (!Banner) _missingMdxReference(\"Banner\", true);\n  return _jsxs(_Fragment, {\n    children: [_jsx(_components.p, {\n      children: _jsx(_components.img, {\n        src: \"https://img.shields.io/npm/v/@payloadcms/plugin-multi-tenant\",\n        alt: \"https://www.npmjs.com/package/@payloadcms/plugin-multi-tenant\"\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"This plugin sets up multi-tenancy for your application from within your \", _jsx(_components.a, {\n        href: \"../admin/overview\",\n        children: \"Admin Panel\"\n      }), \". It does so by adding a \", _jsx(_components.code, {\n        children: \"tenant\"\n      }), \" field to all specified collections. Your front-end application can then query data by tenant. You must add the Tenants collection so you control what fields are available for each tenant.\"]\n    }), \"\\n\", _jsx(Banner, {\n      type: \"info\",\n      children: _jsxs(_components.p, {\n        children: [\"This plugin is completely open-source and the \", _jsx(_components.a, {\n          href: \"https://github.com/payloadcms/payload/tree/main/packages/plugin-multi-tenant\",\n          children: \"source code can be found\\nhere\"\n        }), \".\\nIf you need help, check out our \", _jsx(_components.a, {\n          href: \"https://payloadcms.com/community-help\",\n          children: \"Community\\nHelp\"\n        }), \". If you think you've found a bug,\\nplease \", _jsx(_components.a, {\n          href: \"https://github.com/payloadcms/payload/issues/new?assignees=\u0026labels=plugin%3A%multi-tenant\u0026template=bug_report.md\u0026title=plugin-multi-tenant%3A\",\n          children: \"open a new\\nissue\"\n        }), \"\\nwith as much detail as possible.\"]\n      })\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"Core features\"\n    }), \"\\n\", _jsxs(_components.ul, {\n      children: [\"\\n\", _jsxs(_components.li, {\n        children: [\"Adds a \", _jsx(_components.code, {\n          children: \"tenant\"\n        }), \" field to each specified collection\"]\n      }), \"\\n\", _jsx(_components.li, {\n        children: \"Adds a tenant selector to the admin panel, allowing you to switch between tenants\"\n      }), \"\\n\", _jsx(_components.li, {\n        children: \"Filters list view results by selected tenant\"\n      }), \"\\n\", _jsx(_components.li, {\n        children: \"Filters relationship fields by selected tenant\"\n      }), \"\\n\", _jsx(_components.li, {\n        children: \"Ability to create \\\"global\\\" like collections, 1 doc per tenant\"\n      }), \"\\n\", _jsx(_components.li, {\n        children: \"Automatically assign a tenant to new documents\"\n      }), \"\\n\"]\n    }), \"\\n\", _jsxs(Banner, {\n      type: \"error\",\n      children: [_jsx(_components.p, {\n        children: _jsx(_components.strong, {\n          children: \"Warning\"\n        })\n      }), _jsx(_components.p, {\n        children: \"By default this plugin cleans up documents when a tenant is deleted. You should ensure you have\\nstrong access control on your tenants collection to prevent deletions by unauthorized users.\"\n      }), _jsxs(_components.p, {\n        children: [\"You can disabled this behavior by setting \", _jsx(_components.code, {\n          children: \"cleanupAfterTenantDelete\"\n        }), \" to \", _jsx(_components.code, {\n          children: \"false\"\n        }), \" in the plugin options.\"]\n      })]\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"Installation\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Install the plugin using any JavaScript package manager like \", _jsx(_components.a, {\n        href: \"https://pnpm.io\",\n        children: \"pnpm\"\n      }), \", \", _jsx(_components.a, {\n        href: \"https://npmjs.com\",\n        children: \"npm\"\n      }), \", or \", _jsx(_components.a, {\n        href: \"https://yarnpkg.com\",\n        children: \"Yarn\"\n      }), \":\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-bash\",\n        children: \"  pnpm add @payloadcms/plugin-multi-tenant\\n\"\n      })\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Options\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"The plugin accepts an object with the following properties:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"type MultiTenantPluginConfig\u003cConfigTypes = unknown\u003e = {\\n  /**\\n   * After a tenant is deleted, the plugin will attempt to clean up related documents\\n   * - removing documents with the tenant ID\\n   * - removing the tenant from users\\n   *\\n   * @default true\\n   */\\n  cleanupAfterTenantDelete?: boolean\\n  /**\\n   * Automatically\\n   */\\n  collections: {\\n    [key in CollectionSlug]?: {\\n      /**\\n       * Set to `true` if you want the collection to behave as a global\\n       *\\n       * @default false\\n       */\\n      isGlobal?: boolean\\n      /**\\n       * Set to `false` if you want to manually apply the baseListFilter\\n       *\\n       * @default true\\n       */\\n      useBaseListFilter?: boolean\\n      /**\\n       * Set to `false` if you want to handle collection access manually without the multi-tenant constraints applied\\n       *\\n       * @default true\\n       */\\n      useTenantAccess?: boolean\\n    }\\n  }\\n  /**\\n   * Enables debug mode\\n   * - Makes the tenant field visible in the admin UI within applicable collections\\n   *\\n   * @default false\\n   */\\n  debug?: boolean\\n  /**\\n   * Enables the multi-tenant plugin\\n   *\\n   * @default true\\n   */\\n  enabled?: boolean\\n  /**\\n   * Field configuration for the field added to all tenant enabled collections\\n   */\\n  tenantField?: {\\n    access?: RelationshipField['access']\\n    /**\\n     * The name of the field added to all tenant enabled collections\\n     *\\n     * @default 'tenant'\\n     */\\n    name?: string\\n  }\\n  /**\\n   * Field configuration for the field added to the users collection\\n   *\\n   * If `includeDefaultField` is `false`, you must include the field on your users collection manually\\n   * This is useful if you want to customize the field or place the field in a specific location\\n   */\\n  tenantsArrayField?:\\n    | {\\n        /**\\n         * Access configuration for the array field\\n         */\\n        arrayFieldAccess?: ArrayField['access']\\n        /**\\n         * Name of the array field\\n         *\\n         * @default 'tenants'\\n         */\\n        arrayFieldName?: string\\n        /**\\n         * Name of the tenant field\\n         *\\n         * @default 'tenant'\\n         */\\n        arrayTenantFieldName?: string\\n        /**\\n         * When `includeDefaultField` is `true`, the field will be added to the users collection automatically\\n         */\\n        includeDefaultField?: true\\n        /**\\n         * Additional fields to include on the tenants array field\\n         */\\n        rowFields?: Field[]\\n        /**\\n         * Access configuration for the tenant field\\n         */\\n        tenantFieldAccess?: RelationshipField['access']\\n      }\\n    | {\\n        arrayFieldAccess?: never\\n        arrayFieldName?: string\\n        arrayTenantFieldName?: string\\n        /**\\n         * When `includeDefaultField` is `false`, you must include the field on your users collection manually\\n         */\\n        includeDefaultField?: false\\n        rowFields?: never\\n        tenantFieldAccess?: never\\n      }\\n  /**\\n   * Customize tenant selector label\\n   *\\n   * Either a string or an object where the keys are i18n codes and the values are the string labels\\n   */\\n  tenantSelectorLabel?:\\n    | Partial\u003c{\\n        [key in AcceptedLanguages]?: string\\n      }\u003e\\n    | string\\n  /**\\n   * The slug for the tenant collection\\n   *\\n   * @default 'tenants'\\n   */\\n  tenantsSlug?: string\\n  /**\\n   * Function that determines if a user has access to _all_ tenants\\n   *\\n   * Useful for super-admin type users\\n   */\\n  userHasAccessToAllTenants?: (\\n    user: ConfigTypes extends { user: unknown } ? ConfigTypes['user'] : User,\\n  ) =\u003e boolean\\n  /**\\n   * Opt out of adding access constraints to the tenants collection\\n   */\\n  useTenantsCollectionAccess?: boolean\\n  /**\\n   * Opt out including the baseListFilter to filter tenants by selected tenant\\n   */\\n  useTenantsListFilter?: boolean\\n  /**\\n   * Opt out including the baseListFilter to filter users by selected tenant\\n   */\\n  useUsersTenantFilter?: boolean\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"Basic Usage\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"In the \", _jsx(_components.code, {\n        children: \"plugins\"\n      }), \" array of your \", _jsx(_components.a, {\n        href: \"https://payloadcms.com/docs/configuration/overview\",\n        children: \"Payload Config\"\n      }), \", call the plugin with \", _jsx(_components.a, {\n        href: \"#options\",\n        children: \"options\"\n      }), \":\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import { buildConfig } from 'payload'\\nimport { multiTenantPlugin } from '@payloadcms/plugin-multi-tenant'\\nimport type { Config } from './payload-types'\\n\\nconst config = buildConfig({\\n  collections: [\\n    {\\n      slug: 'tenants',\\n      admin: {\\n        useAsTitle: 'name'\\n      }\\n      fields: [\\n        // remember, you own these fields\\n        // these are merely suggestions/examples\\n        {\\n        name: 'name',\\n        type: 'text',\\n        required: true,\\n        },\\n        {\\n          name: 'slug',\\n          type: 'text',\\n          required: true,\\n        },\\n        {\\n          name: 'domain',\\n          type: 'text',\\n          required: true,\\n        }\\n      ],\\n    },\\n  ],\\n  plugins: [\\n    multiTenantPlugin\u003cConfig\u003e({\\n      collections: {\\n        pages: {},\\n        navigation: {\\n          isGlobal: true,\\n        }\\n      },\\n    }),\\n  ],\\n})\\n\\nexport default config\\n\"\n      })\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"Front end usage\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"The plugin scaffolds out everything you will need to separate data by tenant. You can use the \", _jsx(_components.code, {\n        children: \"tenant\"\n      }), \" field to filter data from enabled collections in your front-end application.\"]\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"In your frontend you can query and constrain data by tenant with the following:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-tsx\",\n        children: \"const pagesBySlug = await payload.find({\\n  collection: 'pages',\\n  depth: 1,\\n  draft: false,\\n  limit: 1000,\\n  overrideAccess: false,\\n  where: {\\n    // your constraint would depend on the\\n    // fields you added to the tenants collection\\n    // here we are assuming a slug field exists\\n    // on the tenant collection, like in the example above\\n    'tenant.slug': {\\n      equals: 'gold',\\n    },\\n  },\\n})\\n\"\n      })\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"NextJS rewrites\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Using NextJS rewrites and this route structure \", _jsx(_components.code, {\n        children: \"/[tenantDomain]/[slug]\"\n      }), \", we can rewrite routes specifically for domains requested:\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"async rewrites() {\\n  return [\\n    {\\n      source: '/((?!admin|api)):path*',\\n      destination: '/:tenantDomain/:path*',\\n      has: [\\n        {\\n          type: 'host',\\n          value: '(?\u003ctenantDomain\u003e.*)',\\n        },\\n      ],\\n    },\\n  ];\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"React Hooks\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Below are the hooks exported from the plugin that you can import into your own custom components to consume.\"\n    }), \"\\n\", _jsx(_components.h4, {\n      children: \"useTenantSelection\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"You can import this like so:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-tsx\",\n        children: \"import { useTenantSelection } from '@payloadcms/plugin-multi-tenant/client'\\n\\n...\\n\\nconst tenantContext = useTenantSelection()\\n\"\n      })\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"The hook returns the following context:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"type ContextType = {\\n  /**\\n   * Array of options to select from\\n   */\\n  options: OptionObject[]\\n  /**\\n   * The currently selected tenant ID\\n   */\\n  selectedTenantID: number | string | undefined\\n  /**\\n   * Prevents a refresh when the tenant is changed\\n   *\\n   * If not switching tenants while viewing a \\\"global\\\", set to true\\n   */\\n  setPreventRefreshOnChange: React.Dispatch\u003cReact.SetStateAction\u003cboolean\u003e\u003e\\n  /**\\n   * Sets the selected tenant ID\\n   *\\n   * @param args.id - The ID of the tenant to select\\n   * @param args.refresh - Whether to refresh the page after changing the tenant\\n   */\\n  setTenant: (args: {\\n    id: number | string | undefined\\n    refresh?: boolean\\n  }) =\u003e void\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"Examples\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"The \", _jsx(_components.a, {\n        href: \"https://github.com/payloadcms/payload/tree/main/examples\",\n        children: \"Examples Directory\"\n      }), \" also contains an official \", _jsx(_components.a, {\n        href: \"https://github.com/payloadcms/payload/tree/main/examples/multi-tenant\",\n        children: \"Multi-Tenant\"\n      }), \" example.\"]\n    })]\n  });\n}\nfunction MDXContent(props = {}) {\n  const {wrapper: MDXLayout} = Object.assign({}, _provideComponents(), props.components);\n  return MDXLayout ? _jsx(MDXLayout, Object.assign({}, props, {\n    children: _jsx(_createMdxContent, props)\n  })) : _createMdxContent(props);\n}\nreturn {\n  default: MDXContent\n};\nfunction _missingMdxReference(id, component) {\n  throw new Error(\"Expected \" + (component ? \"component\" : \"object\") + \" `\" + id + \"` to be defined: you likely forgot to import, pass, or provide it.\");\n}\n","frontmatter":{},"scope":{}}},"__N_SSG":true},"page":"/docs/[...slug]","query":{"slug":["plugins","multi-tenant"]},"buildId":"rEpVRygLyV6yJ0i_Ohw0C","isFallback":false,"gsp":true,"scriptLoader":[]}</script></body></html>

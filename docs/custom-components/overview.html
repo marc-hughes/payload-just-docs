@@ -1,0 +1,364 @@
+<!DOCTYPE html><html><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width"/><meta name="next-head-count" content="2"/><link rel="preload" href="/_next/static/css/adeeaed65336a824.css" as="style" crossorigin=""/><link rel="stylesheet" href="/_next/static/css/adeeaed65336a824.css" crossorigin="" data-n-g=""/><noscript data-n-css=""></noscript><script defer="" crossorigin="" nomodule="" src="/_next/static/chunks/polyfills-c67a75d1b6f99dc8.js"></script><script src="/_next/static/chunks/webpack-fd8027ecb5121007.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/framework-fae63b21a27d6472.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/main-04104d75f6814829.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/pages/_app-2747846ed27f1501.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/pages/docs/%5B...slug%5D-e023289636109d90.js" defer="" crossorigin=""></script><script src="/_next/static/rEpVRygLyV6yJ0i_Ohw0C/_buildManifest.js" defer="" crossorigin=""></script><script src="/_next/static/rEpVRygLyV6yJ0i_Ohw0C/_ssgManifest.js" defer="" crossorigin=""></script></head><body><div id="__next"><div class="container mx-auto px-4 py-8 max-w-4xl"><h1 class="text-4xl font-bold mb-4">Swap in your own React components</h1><p class="text-xl text-gray-600 mb-8">Fully customize your Admin Panel by swapping in your own React components. Add fields, remove views, update routes and change functions to sculpt your perfect Dashboard.</p><div class="prose prose-lg max-w-none"><p>The Payload <a href="../admin/overview">Admin Panel</a> is designed to be as minimal and straightforward as possible to allow for easy customization and full control over the UI. In order for Payload to support this level of customization, Payload provides a pattern for you to supply your own React components through your <a href="../configuration/overview">Payload Config</a>.</p>
+<p>All Custom Components in Payload are <a href="https://react.dev/reference/rsc/server-components">React Server Components</a> by default. This enables the use of the <a href="../local-api/overview">Local API</a> directly on the front-end. Custom Components are available for nearly every part of the Admin Panel for extreme granularity and control.</p>
+<div class="p-4 my-4 rounded-lg border bg-green-50 border-green-200 text-green-800"><svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg><p><strong>Note:</strong> Client Components continue to be fully supported. To use Client
+Components in your app, simply include the <code>&#x27;use client&#x27;</code> directive. Payload
+will automatically detect and remove all
+<a href="https://react.dev/reference/rsc/use-client#serializable-types">non-serializable</a>
+default props before rendering your component. <a href="#client-components">More
+details</a>.</p></div>
+<p>There are four main types of Custom Components in Payload:</p>
+<ul>
+<li><a href="./root-components">Root Components</a></li>
+<li><a href="../configuration/collections#custom-components">Collection Components</a></li>
+<li><a href="../configuration/globals#custom-components">Global Components</a></li>
+<li><a href="../fields/overview#custom-components">Field Components</a></li>
+</ul>
+<p>To swap in your own Custom Component, first determine the scope that corresponds to what you are trying to accomplish, consult the list of available components, then <a href="#building-custom-components">author your React component(s)</a> accordingly.</p>
+<h2>Defining Custom Components</h2>
+<p>As Payload compiles the Admin Panel, it checks your config for Custom Components. When detected, Payload either replaces its own default component with yours, or if none exists by default, renders yours outright. While there are many places where Custom Components are supported in Payload, each is defined in the same way using <a href="#component-paths">Component Paths</a>.</p>
+<p>To add a Custom Component, point to its file path in your Payload Config:</p>
+<pre><code class="language-ts">import { buildConfig } from &#x27;payload&#x27;
+
+const config = buildConfig({
+  // ...
+  admin: {
+    components: {
+      logout: {
+        Button: &#x27;/src/components/Logout#MyComponent&#x27;, // highlight-line
+      },
+    },
+  },
+})
+</code></pre>
+<div class="p-4 my-4 rounded-lg border bg-green-50 border-green-200 text-green-800"><svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg><p><strong>Note:</strong> All Custom Components can be either Server Components or Client
+Components, depending on the presence of the <code>&#x27;use client&#x27;</code> directive at the
+top of the file.</p></div>
+<h3>Component Paths</h3>
+<p>In order to ensure the Payload Config is fully Node.js compatible and as lightweight as possible, components are not directly imported into your config. Instead, they are identified by their file path for the Admin Panel to resolve on its own.</p>
+<p>Component Paths, by default, are relative to your project&#x27;s base directory. This is either your current working directory, or the directory specified in <code>config.admin.importMap.baseDir</code>.</p>
+<p>Components using named exports are identified either by appending <code>#</code> followed by the export name, or using the <code>exportName</code> property. If the component is the default export, this can be omitted.</p>
+<pre><code class="language-ts">import { buildConfig } from &#x27;payload&#x27;
+import { fileURLToPath } from &#x27;node:url&#x27;
+import path from &#x27;path&#x27;
+const filename = fileURLToPath(import.meta.url)
+const dirname = path.dirname(filename)
+
+const config = buildConfig({
+  // ...
+  admin: {
+    importMap: {
+      baseDir: path.resolve(dirname, &#x27;src&#x27;), // highlight-line
+    },
+    components: {
+      logout: {
+        Button: &#x27;/components/Logout#MyComponent&#x27;, // highlight-line
+      },
+    },
+  },
+})
+</code></pre>
+<p>In this example, we set the base directory to the <code>src</code> directory, and omit the <code>/src/</code> part of our component path string.</p>
+<h3>Component Config</h3>
+<p>While Custom Components are usually defined as a string, you can also pass in an object with additional options:</p>
+<pre><code class="language-ts">import { buildConfig } from &#x27;payload&#x27;
+
+const config = buildConfig({
+  // ...
+  admin: {
+    components: {
+      logout: {
+        // highlight-start
+        Button: {
+          path: &#x27;/src/components/Logout&#x27;,
+          exportName: &#x27;MyComponent&#x27;,
+        },
+        // highlight-end
+      },
+    },
+  },
+})
+</code></pre>
+<p>The following options are available:</p>
+<div class="overflow-x-auto my-8"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr class="even:bg-gray-50"><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><code>clientProps</code></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">Props to be passed to the Custom Components if it&#x27;s a Client Component. <a href="#custom-props">More details</a>.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><code>exportName</code></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">Instead of declaring named exports using <code>#</code> in the component path, you can also omit them from <code>path</code> and pass them in here.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><code>path</code></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">File path to the Custom Component. Named exports can be appended to the end of the path, separated by a <code>#</code>.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><code>serverProps</code></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">Props to be passed to the Custom Component if it&#x27;s a Server Component. <a href="#custom-props">More details</a>.</td></tr></tbody></table></div>
+<p>For details on how to build Custom Components, see <a href="#building-custom-components">Building Custom Components</a>.</p>
+<h3>Import Map</h3>
+<p>In order for Payload to make use of <a href="#component-paths">Component Paths</a>, an &quot;Import Map&quot; is automatically generated at either <code>src/app/(payload)/admin/importMap.js</code> or <code>app/(payload)/admin/importMap.js</code>. This file contains every Custom Component in your config, keyed to their respective paths. When Payload needs to lookup a component, it uses this file to find the correct import.</p>
+<p>The Import Map is automatically regenerated at startup and whenever Hot Module Replacement (HMR) runs, or you can run <code>payload generate:importmap</code> to manually regenerate it.</p>
+<h4>Overriding Import Map Location</h4>
+<p>Using the <code>config.admin.importMap.importMapFile</code> property, you can override the location of the import map. This is useful if you want to place the import map in a different location, or if you want to use a custom file name.</p>
+<pre><code class="language-ts">import { buildConfig } from &#x27;payload&#x27;
+import { fileURLToPath } from &#x27;node:url&#x27;
+import path from &#x27;path&#x27;
+const filename = fileURLToPath(import.meta.url)
+const dirname = path.dirname(filename)
+
+const config = buildConfig({
+  // ...
+  admin: {
+    importMap: {
+      baseDir: path.resolve(dirname, &#x27;src&#x27;),
+      importMapFile: path.resolve(
+        dirname,
+        &#x27;app&#x27;,
+        &#x27;(payload)&#x27;,
+        &#x27;custom-import-map.js&#x27;,
+      ), // highlight-line
+    },
+  },
+})
+</code></pre>
+<h4>Custom Imports</h4>
+<p>If needed, custom items can be appended onto the Import Map. This is mostly only relevant for plugin authors who need to add a custom import that is not referenced in a known location.</p>
+<p>To add a custom import to the Import Map, use the <code>admin.dependencies</code> property in your <a href="../configuration/overview">Payload Config</a>:</p>
+<pre><code class="language-ts">import { buildConfig } from &#x27;payload&#x27;
+
+export default buildConfig({
+  // ...
+  admin: {
+    // ...
+    dependencies: {
+      myTestComponent: {
+        // myTestComponent is the key - can be anything
+        path: &#x27;/components/TestComponent.js#TestComponent&#x27;,
+        type: &#x27;component&#x27;,
+        clientProps: {
+          test: &#x27;hello&#x27;,
+        },
+      },
+    },
+  },
+})
+</code></pre>
+<h2>Building Custom Components</h2>
+<p>All Custom Components in Payload are <a href="https://react.dev/reference/rsc/server-components">React Server Components</a> by default. This enables the use of the <a href="../local-api/overview">Local API</a> directly on the front-end, among other things.</p>
+<h3>Default Props</h3>
+<p>To make building Custom Components as easy as possible, Payload automatically provides common props, such as the <a href="../local-api/overview"><code>payload</code></a> class and the <a href="../configuration/i18n"><code>i18n</code></a> object. This means that when building Custom Components within the Admin Panel, you do not have to get these yourself.</p>
+<p>Here is an example:</p>
+<pre><code class="language-tsx">import React from &#x27;react&#x27;
+import type { Payload } from &#x27;payload&#x27;
+
+async function MyServerComponent({
+  payload, // highlight-line
+}: {
+  payload: Payload
+}) {
+  const page = await payload.findByID({
+    collection: &#x27;pages&#x27;,
+    id: &#x27;123&#x27;,
+  })
+
+  return &lt;p&gt;{page.title}&lt;/p&gt;
+}
+</code></pre>
+<p>Each Custom Component receives the following props by default:</p>
+<div class="overflow-x-auto my-8"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr class="even:bg-gray-50"><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prop</th><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><code>payload</code></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">The <a href="../local-api/overview">Payload</a> class.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><code>i18n</code></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">The <a href="../configuration/i18n">i18n</a> object.</td></tr></tbody></table></div>
+<div class="p-4 my-4 rounded-lg border bg-yellow-50 border-yellow-200 text-yellow-800"><svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg><p><strong>Reminder:</strong> All Custom Components also receive various other props that are
+specific to the component being rendered. See <a href="#root-components">Root
+Components</a>, <a href="../configuration/collections#custom-components">Collection
+Components</a>, <a href="../configuration/globals#custom-components">Global
+Components</a>, or <a href="../fields/overview#custom-components">Field
+Components</a> for a complete list of all
+default props per component.</p></div>
+<h3>Custom Props</h3>
+<p>It is also possible to pass custom props to your Custom Components. To do this, you can use either the <code>clientProps</code> or <code>serverProps</code> properties depending on whether your prop is <a href="https://react.dev/reference/rsc/use-client#serializable-types">serializable</a>, and whether your component is a Server or Client Component.</p>
+<pre><code class="language-ts">import { buildConfig } from &#x27;payload&#x27;
+
+const config = buildConfig({
+  // ...
+  admin: {
+    // highlight-line
+    components: {
+      logout: {
+        Button: {
+          path: &#x27;/src/components/Logout#MyComponent&#x27;,
+          clientProps: {
+            myCustomProp: &#x27;Hello, World!&#x27;, // highlight-line
+          },
+        },
+      },
+    },
+  },
+})
+</code></pre>
+<p>Here is how your component might receive this prop:</p>
+<pre><code class="language-tsx">import React from &#x27;react&#x27;
+import { Link } from &#x27;@payloadcms/ui&#x27;
+
+export function MyComponent({ myCustomProp }: { myCustomProp: string }) {
+  return &lt;Link href=&quot;/admin/logout&quot;&gt;{myCustomProp}&lt;/Link&gt;
+}
+</code></pre>
+<h3>Client Components</h3>
+<p>All Custom Components in Payload are <a href="https://react.dev/reference/rsc/server-components">React Server Components</a> by default, however, it is possible to use <a href="https://react.dev/reference/rsc/use-client">Client Components</a> by simply adding the <code>&#x27;use client&#x27;</code> directive at the top of your file. Payload will automatically detect and remove all <a href="https://react.dev/reference/rsc/use-client#serializable-types">non-serializable</a> default props before rendering your component.</p>
+<pre><code class="language-tsx">// highlight-start
+&#x27;use client&#x27;
+// highlight-end
+import React, { useState } from &#x27;react&#x27;
+
+export function MyClientComponent() {
+  const [count, setCount] = useState(0)
+
+  return (
+    &lt;button onClick={() =&gt; setCount(count + 1)}&gt;Clicked {count} times&lt;/button&gt;
+  )
+}
+</code></pre>
+<div class="p-4 my-4 rounded-lg border bg-yellow-50 border-yellow-200 text-yellow-800"><svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg><p><strong>Reminder:</strong> Client Components cannot be passed <a href="https://react.dev/reference/rsc/use-client#serializable-types">non-serializable
+props</a>. If you
+are rendering your Client Component <em>from within</em> a Server Component, ensure
+that its props are serializable.</p></div>
+<h3>Accessing the Payload Config</h3>
+<p>From any Server Component, the <a href="../configuration/overview">Payload Config</a> can be accessed directly from the <code>payload</code> prop:</p>
+<pre><code class="language-tsx">import React from &#x27;react&#x27;
+
+export default async function MyServerComponent({
+  payload: {
+    config, // highlight-line
+  },
+}) {
+  return &lt;Link href={config.serverURL}&gt;Go Home&lt;/Link&gt;
+}
+</code></pre>
+<p>But, the Payload Config is <a href="https://react.dev/reference/rsc/use-client#serializable-types">non-serializable</a> by design. It is full of custom validation functions and more. This means that the Payload Config, in its entirety, cannot be passed directly to Client Components.</p>
+<p>For this reason, Payload creates a Client Config and passes it into the Config Provider. This is a serializable version of the Payload Config that can be accessed from any Client Component via the <a href="../admin/react-hooks#useconfig"><code>useConfig</code></a> hook:</p>
+<pre><code class="language-tsx">&#x27;use client&#x27;
+import React from &#x27;react&#x27;
+import { useConfig } from &#x27;@payloadcms/ui&#x27;
+
+export function MyClientComponent() {
+  // highlight-start
+  const {
+    config: { serverURL },
+  } = useConfig()
+  // highlight-end
+
+  return &lt;Link href={serverURL}&gt;Go Home&lt;/Link&gt;
+}
+</code></pre>
+<div class="p-4 my-4 rounded-lg border bg-green-50 border-green-200 text-green-800"><svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg><p>See <a href="#using-hooks">Using Hooks</a> for more details.</p></div>
+<p>Similarly, all <a href="../fields/overview#custom-components">Field Components</a> automatically receive their respective Field Config through props.</p>
+<p>Within Server Components, this prop is named <code>field</code>:</p>
+<pre><code class="language-tsx">import React from &#x27;react&#x27;
+import type { TextFieldServerComponent } from &#x27;payload&#x27;
+
+export const MyClientFieldComponent: TextFieldServerComponent = ({
+  field: { name },
+}) =&gt; {
+  return &lt;p&gt;{`This field&#x27;s name is ${name}`}&lt;/p&gt;
+}
+</code></pre>
+<p>Within Client Components, this prop is named <code>clientField</code> because its non-serializable props have been removed:</p>
+<pre><code class="language-tsx">&#x27;use client&#x27;
+import React from &#x27;react&#x27;
+import type { TextFieldClientComponent } from &#x27;payload&#x27;
+
+export const MyClientFieldComponent: TextFieldClientComponent = ({
+  clientField: { name },
+}) =&gt; {
+  return &lt;p&gt;{`This field&#x27;s name is ${name}`}&lt;/p&gt;
+}
+</code></pre>
+<h3>Getting the Current Language</h3>
+<p>All Custom Components can support language translations to be consistent with Payload&#x27;s <a href="../configuration/i18n">I18n</a>. This will allow your Custom Components to display the correct language based on the user&#x27;s preferences.</p>
+<p>To do this, first add your translation resources to the <a href="../configuration/i18n">I18n Config</a>. Then from any Server Component, you can translate resources using the <code>getTranslation</code> function from <code>@payloadcms/translations</code>.</p>
+<p>All Server Components automatically receive the <code>i18n</code> object as a prop by default:</p>
+<pre><code class="language-tsx">import React from &#x27;react&#x27;
+import { getTranslation } from &#x27;@payloadcms/translations&#x27;
+
+export default async function MyServerComponent({ i18n }) {
+  const translatedTitle = getTranslation(myTranslation, i18n) // highlight-line
+
+  return &lt;p&gt;{translatedTitle}&lt;/p&gt;
+}
+</code></pre>
+<p>The best way to do this within a Client Component is to import the <code>useTranslation</code> hook from <code>@payloadcms/ui</code>:</p>
+<pre><code class="language-tsx">&#x27;use client&#x27;
+import React from &#x27;react&#x27;
+import { useTranslation } from &#x27;@payloadcms/ui&#x27;
+
+export function MyClientComponent() {
+  const { t, i18n } = useTranslation() // highlight-line
+
+  return (
+    &lt;ul&gt;
+      &lt;li&gt;{t(&#x27;namespace1:key&#x27;, { variable: &#x27;value&#x27; })}&lt;/li&gt;
+      &lt;li&gt;{t(&#x27;namespace2:key&#x27;, { variable: &#x27;value&#x27; })}&lt;/li&gt;
+      &lt;li&gt;{i18n.language}&lt;/li&gt;
+    &lt;/ul&gt;
+  )
+}
+</code></pre>
+<div class="p-4 my-4 rounded-lg border bg-green-50 border-green-200 text-green-800"><svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg><p>See the <a href="../admin/react-hooks">Hooks</a> documentation for a full list of
+available hooks.</p></div>
+<h3>Getting the Current Locale</h3>
+<p>All <a href="./custom-views">Custom Views</a> can support multiple locales to be consistent with Payload&#x27;s <a href="../configuration/localization">Localization</a> feature. This can be used to scope API requests, etc.</p>
+<p>All Server Components automatically receive the <code>locale</code> object as a prop by default:</p>
+<pre><code class="language-tsx">import React from &#x27;react&#x27;
+
+export default async function MyServerComponent({ payload, locale }) {
+  const localizedPage = await payload.findByID({
+    collection: &#x27;pages&#x27;,
+    id: &#x27;123&#x27;,
+    locale,
+  })
+
+  return &lt;p&gt;{localizedPage.title}&lt;/p&gt;
+}
+</code></pre>
+<p>The best way to do this within a Client Component is to import the <code>useLocale</code> hook from <code>@payloadcms/ui</code>:</p>
+<pre><code class="language-tsx">&#x27;use client&#x27;
+import React from &#x27;react&#x27;
+import { useLocale } from &#x27;@payloadcms/ui&#x27;
+
+function Greeting() {
+  const locale = useLocale() // highlight-line
+
+  const trans = {
+    en: &#x27;Hello&#x27;,
+    es: &#x27;Hola&#x27;,
+  }
+
+  return &lt;span&gt;{trans[locale.code]}&lt;/span&gt;
+}
+</code></pre>
+<div class="p-4 my-4 rounded-lg border bg-green-50 border-green-200 text-green-800"><svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg><p>See the <a href="../admin/react-hooks">Hooks</a> documentation for a full list of
+available hooks.</p></div>
+<h3>Using Hooks</h3>
+<p>To make it easier to <a href="#building-custom-components">build your Custom Components</a>, you can use <a href="../admin/react-hooks">Payload&#x27;s built-in React Hooks</a> in any Client Component. For example, you might want to interact with one of Payload&#x27;s many React Contexts. To do this, you can use one of the many hooks available depending on your needs.</p>
+<pre><code class="language-tsx">&#x27;use client&#x27;
+import React from &#x27;react&#x27;
+import { useDocumentInfo } from &#x27;@payloadcms/ui&#x27;
+
+export function MyClientComponent() {
+  const { slug } = useDocumentInfo() // highlight-line
+
+  return &lt;p&gt;{`Entity slug: ${slug}`}&lt;/p&gt;
+}
+</code></pre>
+<div class="p-4 my-4 rounded-lg border bg-green-50 border-green-200 text-green-800"><svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg><p>See the <a href="../admin/react-hooks">Hooks</a> documentation for a full list of
+available hooks.</p></div>
+<h3>Adding Styles</h3>
+<p>Payload has a robust <a href="../admin/customizing-css">CSS Library</a> that you can use to style your Custom Components to match to Payload&#x27;s built-in styling. This will ensure that your Custom Components integrate well into the existing design system. This will make it so they automatically adapt to any theme changes that might occur.</p>
+<p>To apply custom styles, simply import your own <code>.css</code> or <code>.scss</code> file into your Custom Component:</p>
+<pre><code class="language-tsx">import &#x27;./index.scss&#x27;
+
+export function MyComponent() {
+  return &lt;div className=&quot;my-component&quot;&gt;My Custom Component&lt;/div&gt;
+}
+</code></pre>
+<p>Then to colorize your Custom Component&#x27;s background, for example, you can use the following CSS:</p>
+<pre><code class="language-scss">.my-component {
+  background-color: var(--theme-elevation-500);
+}
+</code></pre>
+<p>Payload also exports its <a href="https://sass-lang.com">SCSS</a> library for reuse which includes mixins, etc. To use this, simply import it as follows into your <code>.scss</code> file:</p>
+<pre><code class="language-scss">@import &#x27;~@payloadcms/ui/scss&#x27;;
+
+.my-component {
+  @include mid-break {
+    background-color: var(--theme-elevation-900);
+  }
+}
+</code></pre>
+<div class="p-4 my-4 rounded-lg border bg-green-50 border-green-200 text-green-800"><svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg><p><strong>Note:</strong> You can also drill into Payload&#x27;s own component styles, or easily
+apply global, app-wide CSS. More on that <a href="../admin/customizing-css">here</a>.</p></div></div></div></div><script id="__NEXT_DATA__" type="application/json" crossorigin="">{"props":{"pageProps":{"frontMatter":{"title":"Swap in your own React components","label":"Overview","order":10,"desc":"Fully customize your Admin Panel by swapping in your own React components. Add fields, remove views, update routes and change functions to sculpt your perfect Dashboard.","keywords":"admin, components, custom, documentation, Content Management System, cms, headless, javascript, node, react, nextjs"},"content":{"compiledSource":"/*@jsxRuntime automatic @jsxImportSource react*/\nconst {Fragment: _Fragment, jsx: _jsx, jsxs: _jsxs} = arguments[0];\nconst {useMDXComponents: _provideComponents} = arguments[0];\nfunction _createMdxContent(props) {\n  const _components = Object.assign({\n    p: \"p\",\n    a: \"a\",\n    strong: \"strong\",\n    code: \"code\",\n    ul: \"ul\",\n    li: \"li\",\n    h2: \"h2\",\n    pre: \"pre\",\n    h3: \"h3\",\n    table: \"table\",\n    thead: \"thead\",\n    tr: \"tr\",\n    th: \"th\",\n    tbody: \"tbody\",\n    td: \"td\",\n    h4: \"h4\",\n    em: \"em\"\n  }, _provideComponents(), props.components), {Banner} = _components;\n  if (!Banner) _missingMdxReference(\"Banner\", true);\n  return _jsxs(_Fragment, {\n    children: [_jsxs(_components.p, {\n      children: [\"The Payload \", _jsx(_components.a, {\n        href: \"../admin/overview\",\n        children: \"Admin Panel\"\n      }), \" is designed to be as minimal and straightforward as possible to allow for easy customization and full control over the UI. In order for Payload to support this level of customization, Payload provides a pattern for you to supply your own React components through your \", _jsx(_components.a, {\n        href: \"../configuration/overview\",\n        children: \"Payload Config\"\n      }), \".\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"All Custom Components in Payload are \", _jsx(_components.a, {\n        href: \"https://react.dev/reference/rsc/server-components\",\n        children: \"React Server Components\"\n      }), \" by default. This enables the use of the \", _jsx(_components.a, {\n        href: \"../local-api/overview\",\n        children: \"Local API\"\n      }), \" directly on the front-end. Custom Components are available for nearly every part of the Admin Panel for extreme granularity and control.\"]\n    }), \"\\n\", _jsx(Banner, {\n      type: \"success\",\n      children: _jsxs(_components.p, {\n        children: [_jsx(_components.strong, {\n          children: \"Note:\"\n        }), \" Client Components continue to be fully supported. To use Client\\nComponents in your app, simply include the \", _jsx(_components.code, {\n          children: \"'use client'\"\n        }), \" directive. Payload\\nwill automatically detect and remove all\\n\", _jsx(_components.a, {\n          href: \"https://react.dev/reference/rsc/use-client#serializable-types\",\n          children: \"non-serializable\"\n        }), \"\\ndefault props before rendering your component. \", _jsx(_components.a, {\n          href: \"#client-components\",\n          children: \"More\\ndetails\"\n        }), \".\"]\n      })\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"There are four main types of Custom Components in Payload:\"\n    }), \"\\n\", _jsxs(_components.ul, {\n      children: [\"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.a, {\n          href: \"./root-components\",\n          children: \"Root Components\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.a, {\n          href: \"../configuration/collections#custom-components\",\n          children: \"Collection Components\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.a, {\n          href: \"../configuration/globals#custom-components\",\n          children: \"Global Components\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.a, {\n          href: \"../fields/overview#custom-components\",\n          children: \"Field Components\"\n        })\n      }), \"\\n\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"To swap in your own Custom Component, first determine the scope that corresponds to what you are trying to accomplish, consult the list of available components, then \", _jsx(_components.a, {\n        href: \"#building-custom-components\",\n        children: \"author your React component(s)\"\n      }), \" accordingly.\"]\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"Defining Custom Components\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"As Payload compiles the Admin Panel, it checks your config for Custom Components. When detected, Payload either replaces its own default component with yours, or if none exists by default, renders yours outright. While there are many places where Custom Components are supported in Payload, each is defined in the same way using \", _jsx(_components.a, {\n        href: \"#component-paths\",\n        children: \"Component Paths\"\n      }), \".\"]\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"To add a Custom Component, point to its file path in your Payload Config:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import { buildConfig } from 'payload'\\n\\nconst config = buildConfig({\\n  // ...\\n  admin: {\\n    components: {\\n      logout: {\\n        Button: '/src/components/Logout#MyComponent', // highlight-line\\n      },\\n    },\\n  },\\n})\\n\"\n      })\n    }), \"\\n\", _jsx(Banner, {\n      type: \"success\",\n      children: _jsxs(_components.p, {\n        children: [_jsx(_components.strong, {\n          children: \"Note:\"\n        }), \" All Custom Components can be either Server Components or Client\\nComponents, depending on the presence of the \", _jsx(_components.code, {\n          children: \"'use client'\"\n        }), \" directive at the\\ntop of the file.\"]\n      })\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Component Paths\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"In order to ensure the Payload Config is fully Node.js compatible and as lightweight as possible, components are not directly imported into your config. Instead, they are identified by their file path for the Admin Panel to resolve on its own.\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Component Paths, by default, are relative to your project's base directory. This is either your current working directory, or the directory specified in \", _jsx(_components.code, {\n        children: \"config.admin.importMap.baseDir\"\n      }), \".\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Components using named exports are identified either by appending \", _jsx(_components.code, {\n        children: \"#\"\n      }), \" followed by the export name, or using the \", _jsx(_components.code, {\n        children: \"exportName\"\n      }), \" property. If the component is the default export, this can be omitted.\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import { buildConfig } from 'payload'\\nimport { fileURLToPath } from 'node:url'\\nimport path from 'path'\\nconst filename = fileURLToPath(import.meta.url)\\nconst dirname = path.dirname(filename)\\n\\nconst config = buildConfig({\\n  // ...\\n  admin: {\\n    importMap: {\\n      baseDir: path.resolve(dirname, 'src'), // highlight-line\\n    },\\n    components: {\\n      logout: {\\n        Button: '/components/Logout#MyComponent', // highlight-line\\n      },\\n    },\\n  },\\n})\\n\"\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"In this example, we set the base directory to the \", _jsx(_components.code, {\n        children: \"src\"\n      }), \" directory, and omit the \", _jsx(_components.code, {\n        children: \"/src/\"\n      }), \" part of our component path string.\"]\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Component Config\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"While Custom Components are usually defined as a string, you can also pass in an object with additional options:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import { buildConfig } from 'payload'\\n\\nconst config = buildConfig({\\n  // ...\\n  admin: {\\n    components: {\\n      logout: {\\n        // highlight-start\\n        Button: {\\n          path: '/src/components/Logout',\\n          exportName: 'MyComponent',\\n        },\\n        // highlight-end\\n      },\\n    },\\n  },\\n})\\n\"\n      })\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"The following options are available:\"\n    }), \"\\n\", _jsxs(_components.table, {\n      children: [_jsx(_components.thead, {\n        children: _jsxs(_components.tr, {\n          children: [_jsx(_components.th, {\n            children: \"Property\"\n          }), _jsx(_components.th, {\n            children: \"Description\"\n          })]\n        })\n      }), _jsxs(_components.tbody, {\n        children: [_jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.code, {\n              children: \"clientProps\"\n            })\n          }), _jsxs(_components.td, {\n            children: [\"Props to be passed to the Custom Components if it's a Client Component. \", _jsx(_components.a, {\n              href: \"#custom-props\",\n              children: \"More details\"\n            }), \".\"]\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.code, {\n              children: \"exportName\"\n            })\n          }), _jsxs(_components.td, {\n            children: [\"Instead of declaring named exports using \", _jsx(_components.code, {\n              children: \"#\"\n            }), \" in the component path, you can also omit them from \", _jsx(_components.code, {\n              children: \"path\"\n            }), \" and pass them in here.\"]\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.code, {\n              children: \"path\"\n            })\n          }), _jsxs(_components.td, {\n            children: [\"File path to the Custom Component. Named exports can be appended to the end of the path, separated by a \", _jsx(_components.code, {\n              children: \"#\"\n            }), \".\"]\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.code, {\n              children: \"serverProps\"\n            })\n          }), _jsxs(_components.td, {\n            children: [\"Props to be passed to the Custom Component if it's a Server Component. \", _jsx(_components.a, {\n              href: \"#custom-props\",\n              children: \"More details\"\n            }), \".\"]\n          })]\n        })]\n      })]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"For details on how to build Custom Components, see \", _jsx(_components.a, {\n        href: \"#building-custom-components\",\n        children: \"Building Custom Components\"\n      }), \".\"]\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Import Map\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"In order for Payload to make use of \", _jsx(_components.a, {\n        href: \"#component-paths\",\n        children: \"Component Paths\"\n      }), \", an \\\"Import Map\\\" is automatically generated at either \", _jsx(_components.code, {\n        children: \"src/app/(payload)/admin/importMap.js\"\n      }), \" or \", _jsx(_components.code, {\n        children: \"app/(payload)/admin/importMap.js\"\n      }), \". This file contains every Custom Component in your config, keyed to their respective paths. When Payload needs to lookup a component, it uses this file to find the correct import.\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"The Import Map is automatically regenerated at startup and whenever Hot Module Replacement (HMR) runs, or you can run \", _jsx(_components.code, {\n        children: \"payload generate:importmap\"\n      }), \" to manually regenerate it.\"]\n    }), \"\\n\", _jsx(_components.h4, {\n      children: \"Overriding Import Map Location\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Using the \", _jsx(_components.code, {\n        children: \"config.admin.importMap.importMapFile\"\n      }), \" property, you can override the location of the import map. This is useful if you want to place the import map in a different location, or if you want to use a custom file name.\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import { buildConfig } from 'payload'\\nimport { fileURLToPath } from 'node:url'\\nimport path from 'path'\\nconst filename = fileURLToPath(import.meta.url)\\nconst dirname = path.dirname(filename)\\n\\nconst config = buildConfig({\\n  // ...\\n  admin: {\\n    importMap: {\\n      baseDir: path.resolve(dirname, 'src'),\\n      importMapFile: path.resolve(\\n        dirname,\\n        'app',\\n        '(payload)',\\n        'custom-import-map.js',\\n      ), // highlight-line\\n    },\\n  },\\n})\\n\"\n      })\n    }), \"\\n\", _jsx(_components.h4, {\n      children: \"Custom Imports\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"If needed, custom items can be appended onto the Import Map. This is mostly only relevant for plugin authors who need to add a custom import that is not referenced in a known location.\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"To add a custom import to the Import Map, use the \", _jsx(_components.code, {\n        children: \"admin.dependencies\"\n      }), \" property in your \", _jsx(_components.a, {\n        href: \"../configuration/overview\",\n        children: \"Payload Config\"\n      }), \":\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import { buildConfig } from 'payload'\\n\\nexport default buildConfig({\\n  // ...\\n  admin: {\\n    // ...\\n    dependencies: {\\n      myTestComponent: {\\n        // myTestComponent is the key - can be anything\\n        path: '/components/TestComponent.js#TestComponent',\\n        type: 'component',\\n        clientProps: {\\n          test: 'hello',\\n        },\\n      },\\n    },\\n  },\\n})\\n\"\n      })\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"Building Custom Components\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"All Custom Components in Payload are \", _jsx(_components.a, {\n        href: \"https://react.dev/reference/rsc/server-components\",\n        children: \"React Server Components\"\n      }), \" by default. This enables the use of the \", _jsx(_components.a, {\n        href: \"../local-api/overview\",\n        children: \"Local API\"\n      }), \" directly on the front-end, among other things.\"]\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Default Props\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"To make building Custom Components as easy as possible, Payload automatically provides common props, such as the \", _jsx(_components.a, {\n        href: \"../local-api/overview\",\n        children: _jsx(_components.code, {\n          children: \"payload\"\n        })\n      }), \" class and the \", _jsx(_components.a, {\n        href: \"../configuration/i18n\",\n        children: _jsx(_components.code, {\n          children: \"i18n\"\n        })\n      }), \" object. This means that when building Custom Components within the Admin Panel, you do not have to get these yourself.\"]\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Here is an example:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-tsx\",\n        children: \"import React from 'react'\\nimport type { Payload } from 'payload'\\n\\nasync function MyServerComponent({\\n  payload, // highlight-line\\n}: {\\n  payload: Payload\\n}) {\\n  const page = await payload.findByID({\\n    collection: 'pages',\\n    id: '123',\\n  })\\n\\n  return \u003cp\u003e{page.title}\u003c/p\u003e\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Each Custom Component receives the following props by default:\"\n    }), \"\\n\", _jsxs(_components.table, {\n      children: [_jsx(_components.thead, {\n        children: _jsxs(_components.tr, {\n          children: [_jsx(_components.th, {\n            children: \"Prop\"\n          }), _jsx(_components.th, {\n            children: \"Description\"\n          })]\n        })\n      }), _jsxs(_components.tbody, {\n        children: [_jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.code, {\n              children: \"payload\"\n            })\n          }), _jsxs(_components.td, {\n            children: [\"The \", _jsx(_components.a, {\n              href: \"../local-api/overview\",\n              children: \"Payload\"\n            }), \" class.\"]\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.code, {\n              children: \"i18n\"\n            })\n          }), _jsxs(_components.td, {\n            children: [\"The \", _jsx(_components.a, {\n              href: \"../configuration/i18n\",\n              children: \"i18n\"\n            }), \" object.\"]\n          })]\n        })]\n      })]\n    }), \"\\n\", _jsx(Banner, {\n      type: \"warning\",\n      children: _jsxs(_components.p, {\n        children: [_jsx(_components.strong, {\n          children: \"Reminder:\"\n        }), \" All Custom Components also receive various other props that are\\nspecific to the component being rendered. See \", _jsx(_components.a, {\n          href: \"#root-components\",\n          children: \"Root\\nComponents\"\n        }), \", \", _jsx(_components.a, {\n          href: \"../configuration/collections#custom-components\",\n          children: \"Collection\\nComponents\"\n        }), \", \", _jsx(_components.a, {\n          href: \"../configuration/globals#custom-components\",\n          children: \"Global\\nComponents\"\n        }), \", or \", _jsx(_components.a, {\n          href: \"../fields/overview#custom-components\",\n          children: \"Field\\nComponents\"\n        }), \" for a complete list of all\\ndefault props per component.\"]\n      })\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Custom Props\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"It is also possible to pass custom props to your Custom Components. To do this, you can use either the \", _jsx(_components.code, {\n        children: \"clientProps\"\n      }), \" or \", _jsx(_components.code, {\n        children: \"serverProps\"\n      }), \" properties depending on whether your prop is \", _jsx(_components.a, {\n        href: \"https://react.dev/reference/rsc/use-client#serializable-types\",\n        children: \"serializable\"\n      }), \", and whether your component is a Server or Client Component.\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import { buildConfig } from 'payload'\\n\\nconst config = buildConfig({\\n  // ...\\n  admin: {\\n    // highlight-line\\n    components: {\\n      logout: {\\n        Button: {\\n          path: '/src/components/Logout#MyComponent',\\n          clientProps: {\\n            myCustomProp: 'Hello, World!', // highlight-line\\n          },\\n        },\\n      },\\n    },\\n  },\\n})\\n\"\n      })\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Here is how your component might receive this prop:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-tsx\",\n        children: \"import React from 'react'\\nimport { Link } from '@payloadcms/ui'\\n\\nexport function MyComponent({ myCustomProp }: { myCustomProp: string }) {\\n  return \u003cLink href=\\\"/admin/logout\\\"\u003e{myCustomProp}\u003c/Link\u003e\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Client Components\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"All Custom Components in Payload are \", _jsx(_components.a, {\n        href: \"https://react.dev/reference/rsc/server-components\",\n        children: \"React Server Components\"\n      }), \" by default, however, it is possible to use \", _jsx(_components.a, {\n        href: \"https://react.dev/reference/rsc/use-client\",\n        children: \"Client Components\"\n      }), \" by simply adding the \", _jsx(_components.code, {\n        children: \"'use client'\"\n      }), \" directive at the top of your file. Payload will automatically detect and remove all \", _jsx(_components.a, {\n        href: \"https://react.dev/reference/rsc/use-client#serializable-types\",\n        children: \"non-serializable\"\n      }), \" default props before rendering your component.\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-tsx\",\n        children: \"// highlight-start\\n'use client'\\n// highlight-end\\nimport React, { useState } from 'react'\\n\\nexport function MyClientComponent() {\\n  const [count, setCount] = useState(0)\\n\\n  return (\\n    \u003cbutton onClick={() =\u003e setCount(count + 1)}\u003eClicked {count} times\u003c/button\u003e\\n  )\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(Banner, {\n      type: \"warning\",\n      children: _jsxs(_components.p, {\n        children: [_jsx(_components.strong, {\n          children: \"Reminder:\"\n        }), \" Client Components cannot be passed \", _jsx(_components.a, {\n          href: \"https://react.dev/reference/rsc/use-client#serializable-types\",\n          children: \"non-serializable\\nprops\"\n        }), \". If you\\nare rendering your Client Component \", _jsx(_components.em, {\n          children: \"from within\"\n        }), \" a Server Component, ensure\\nthat its props are serializable.\"]\n      })\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Accessing the Payload Config\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"From any Server Component, the \", _jsx(_components.a, {\n        href: \"../configuration/overview\",\n        children: \"Payload Config\"\n      }), \" can be accessed directly from the \", _jsx(_components.code, {\n        children: \"payload\"\n      }), \" prop:\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-tsx\",\n        children: \"import React from 'react'\\n\\nexport default async function MyServerComponent({\\n  payload: {\\n    config, // highlight-line\\n  },\\n}) {\\n  return \u003cLink href={config.serverURL}\u003eGo Home\u003c/Link\u003e\\n}\\n\"\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"But, the Payload Config is \", _jsx(_components.a, {\n        href: \"https://react.dev/reference/rsc/use-client#serializable-types\",\n        children: \"non-serializable\"\n      }), \" by design. It is full of custom validation functions and more. This means that the Payload Config, in its entirety, cannot be passed directly to Client Components.\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"For this reason, Payload creates a Client Config and passes it into the Config Provider. This is a serializable version of the Payload Config that can be accessed from any Client Component via the \", _jsx(_components.a, {\n        href: \"../admin/react-hooks#useconfig\",\n        children: _jsx(_components.code, {\n          children: \"useConfig\"\n        })\n      }), \" hook:\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-tsx\",\n        children: \"'use client'\\nimport React from 'react'\\nimport { useConfig } from '@payloadcms/ui'\\n\\nexport function MyClientComponent() {\\n  // highlight-start\\n  const {\\n    config: { serverURL },\\n  } = useConfig()\\n  // highlight-end\\n\\n  return \u003cLink href={serverURL}\u003eGo Home\u003c/Link\u003e\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(Banner, {\n      type: \"success\",\n      children: _jsxs(_components.p, {\n        children: [\"See \", _jsx(_components.a, {\n          href: \"#using-hooks\",\n          children: \"Using Hooks\"\n        }), \" for more details.\"]\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Similarly, all \", _jsx(_components.a, {\n        href: \"../fields/overview#custom-components\",\n        children: \"Field Components\"\n      }), \" automatically receive their respective Field Config through props.\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Within Server Components, this prop is named \", _jsx(_components.code, {\n        children: \"field\"\n      }), \":\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-tsx\",\n        children: \"import React from 'react'\\nimport type { TextFieldServerComponent } from 'payload'\\n\\nexport const MyClientFieldComponent: TextFieldServerComponent = ({\\n  field: { name },\\n}) =\u003e {\\n  return \u003cp\u003e{`This field's name is ${name}`}\u003c/p\u003e\\n}\\n\"\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Within Client Components, this prop is named \", _jsx(_components.code, {\n        children: \"clientField\"\n      }), \" because its non-serializable props have been removed:\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-tsx\",\n        children: \"'use client'\\nimport React from 'react'\\nimport type { TextFieldClientComponent } from 'payload'\\n\\nexport const MyClientFieldComponent: TextFieldClientComponent = ({\\n  clientField: { name },\\n}) =\u003e {\\n  return \u003cp\u003e{`This field's name is ${name}`}\u003c/p\u003e\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Getting the Current Language\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"All Custom Components can support language translations to be consistent with Payload's \", _jsx(_components.a, {\n        href: \"../configuration/i18n\",\n        children: \"I18n\"\n      }), \". This will allow your Custom Components to display the correct language based on the user's preferences.\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"To do this, first add your translation resources to the \", _jsx(_components.a, {\n        href: \"../configuration/i18n\",\n        children: \"I18n Config\"\n      }), \". Then from any Server Component, you can translate resources using the \", _jsx(_components.code, {\n        children: \"getTranslation\"\n      }), \" function from \", _jsx(_components.code, {\n        children: \"@payloadcms/translations\"\n      }), \".\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"All Server Components automatically receive the \", _jsx(_components.code, {\n        children: \"i18n\"\n      }), \" object as a prop by default:\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-tsx\",\n        children: \"import React from 'react'\\nimport { getTranslation } from '@payloadcms/translations'\\n\\nexport default async function MyServerComponent({ i18n }) {\\n  const translatedTitle = getTranslation(myTranslation, i18n) // highlight-line\\n\\n  return \u003cp\u003e{translatedTitle}\u003c/p\u003e\\n}\\n\"\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"The best way to do this within a Client Component is to import the \", _jsx(_components.code, {\n        children: \"useTranslation\"\n      }), \" hook from \", _jsx(_components.code, {\n        children: \"@payloadcms/ui\"\n      }), \":\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-tsx\",\n        children: \"'use client'\\nimport React from 'react'\\nimport { useTranslation } from '@payloadcms/ui'\\n\\nexport function MyClientComponent() {\\n  const { t, i18n } = useTranslation() // highlight-line\\n\\n  return (\\n    \u003cul\u003e\\n      \u003cli\u003e{t('namespace1:key', { variable: 'value' })}\u003c/li\u003e\\n      \u003cli\u003e{t('namespace2:key', { variable: 'value' })}\u003c/li\u003e\\n      \u003cli\u003e{i18n.language}\u003c/li\u003e\\n    \u003c/ul\u003e\\n  )\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(Banner, {\n      type: \"success\",\n      children: _jsxs(_components.p, {\n        children: [\"See the \", _jsx(_components.a, {\n          href: \"../admin/react-hooks\",\n          children: \"Hooks\"\n        }), \" documentation for a full list of\\navailable hooks.\"]\n      })\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Getting the Current Locale\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"All \", _jsx(_components.a, {\n        href: \"./custom-views\",\n        children: \"Custom Views\"\n      }), \" can support multiple locales to be consistent with Payload's \", _jsx(_components.a, {\n        href: \"../configuration/localization\",\n        children: \"Localization\"\n      }), \" feature. This can be used to scope API requests, etc.\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"All Server Components automatically receive the \", _jsx(_components.code, {\n        children: \"locale\"\n      }), \" object as a prop by default:\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-tsx\",\n        children: \"import React from 'react'\\n\\nexport default async function MyServerComponent({ payload, locale }) {\\n  const localizedPage = await payload.findByID({\\n    collection: 'pages',\\n    id: '123',\\n    locale,\\n  })\\n\\n  return \u003cp\u003e{localizedPage.title}\u003c/p\u003e\\n}\\n\"\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"The best way to do this within a Client Component is to import the \", _jsx(_components.code, {\n        children: \"useLocale\"\n      }), \" hook from \", _jsx(_components.code, {\n        children: \"@payloadcms/ui\"\n      }), \":\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-tsx\",\n        children: \"'use client'\\nimport React from 'react'\\nimport { useLocale } from '@payloadcms/ui'\\n\\nfunction Greeting() {\\n  const locale = useLocale() // highlight-line\\n\\n  const trans = {\\n    en: 'Hello',\\n    es: 'Hola',\\n  }\\n\\n  return \u003cspan\u003e{trans[locale.code]}\u003c/span\u003e\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(Banner, {\n      type: \"success\",\n      children: _jsxs(_components.p, {\n        children: [\"See the \", _jsx(_components.a, {\n          href: \"../admin/react-hooks\",\n          children: \"Hooks\"\n        }), \" documentation for a full list of\\navailable hooks.\"]\n      })\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Using Hooks\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"To make it easier to \", _jsx(_components.a, {\n        href: \"#building-custom-components\",\n        children: \"build your Custom Components\"\n      }), \", you can use \", _jsx(_components.a, {\n        href: \"../admin/react-hooks\",\n        children: \"Payload's built-in React Hooks\"\n      }), \" in any Client Component. For example, you might want to interact with one of Payload's many React Contexts. To do this, you can use one of the many hooks available depending on your needs.\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-tsx\",\n        children: \"'use client'\\nimport React from 'react'\\nimport { useDocumentInfo } from '@payloadcms/ui'\\n\\nexport function MyClientComponent() {\\n  const { slug } = useDocumentInfo() // highlight-line\\n\\n  return \u003cp\u003e{`Entity slug: ${slug}`}\u003c/p\u003e\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(Banner, {\n      type: \"success\",\n      children: _jsxs(_components.p, {\n        children: [\"See the \", _jsx(_components.a, {\n          href: \"../admin/react-hooks\",\n          children: \"Hooks\"\n        }), \" documentation for a full list of\\navailable hooks.\"]\n      })\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Adding Styles\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Payload has a robust \", _jsx(_components.a, {\n        href: \"../admin/customizing-css\",\n        children: \"CSS Library\"\n      }), \" that you can use to style your Custom Components to match to Payload's built-in styling. This will ensure that your Custom Components integrate well into the existing design system. This will make it so they automatically adapt to any theme changes that might occur.\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"To apply custom styles, simply import your own \", _jsx(_components.code, {\n        children: \".css\"\n      }), \" or \", _jsx(_components.code, {\n        children: \".scss\"\n      }), \" file into your Custom Component:\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-tsx\",\n        children: \"import './index.scss'\\n\\nexport function MyComponent() {\\n  return \u003cdiv className=\\\"my-component\\\"\u003eMy Custom Component\u003c/div\u003e\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Then to colorize your Custom Component's background, for example, you can use the following CSS:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-scss\",\n        children: \".my-component {\\n  background-color: var(--theme-elevation-500);\\n}\\n\"\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Payload also exports its \", _jsx(_components.a, {\n        href: \"https://sass-lang.com\",\n        children: \"SCSS\"\n      }), \" library for reuse which includes mixins, etc. To use this, simply import it as follows into your \", _jsx(_components.code, {\n        children: \".scss\"\n      }), \" file:\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-scss\",\n        children: \"@import '~@payloadcms/ui/scss';\\n\\n.my-component {\\n  @include mid-break {\\n    background-color: var(--theme-elevation-900);\\n  }\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(Banner, {\n      type: \"success\",\n      children: _jsxs(_components.p, {\n        children: [_jsx(_components.strong, {\n          children: \"Note:\"\n        }), \" You can also drill into Payload's own component styles, or easily\\napply global, app-wide CSS. More on that \", _jsx(_components.a, {\n          href: \"../admin/customizing-css\",\n          children: \"here\"\n        }), \".\"]\n      })\n    })]\n  });\n}\nfunction MDXContent(props = {}) {\n  const {wrapper: MDXLayout} = Object.assign({}, _provideComponents(), props.components);\n  return MDXLayout ? _jsx(MDXLayout, Object.assign({}, props, {\n    children: _jsx(_createMdxContent, props)\n  })) : _createMdxContent(props);\n}\nreturn {\n  default: MDXContent\n};\nfunction _missingMdxReference(id, component) {\n  throw new Error(\"Expected \" + (component ? \"component\" : \"object\") + \" `\" + id + \"` to be defined: you likely forgot to import, pass, or provide it.\");\n}\n","frontmatter":{},"scope":{}}},"__N_SSG":true},"page":"/docs/[...slug]","query":{"slug":["custom-components","overview"]},"buildId":"rEpVRygLyV6yJ0i_Ohw0C","isFallback":false,"gsp":true,"scriptLoader":[]}</script></body></html>

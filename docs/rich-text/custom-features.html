@@ -1,0 +1,815 @@
+<!DOCTYPE html><html><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width"/><meta name="next-head-count" content="2"/><link rel="preload" href="/_next/static/css/adeeaed65336a824.css" as="style" crossorigin=""/><link rel="stylesheet" href="/_next/static/css/adeeaed65336a824.css" crossorigin="" data-n-g=""/><noscript data-n-css=""></noscript><script defer="" crossorigin="" nomodule="" src="/_next/static/chunks/polyfills-c67a75d1b6f99dc8.js"></script><script src="/_next/static/chunks/webpack-fd8027ecb5121007.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/framework-fae63b21a27d6472.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/main-04104d75f6814829.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/pages/_app-2747846ed27f1501.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/pages/docs/%5B...slug%5D-e023289636109d90.js" defer="" crossorigin=""></script><script src="/_next/static/rEpVRygLyV6yJ0i_Ohw0C/_buildManifest.js" defer="" crossorigin=""></script><script src="/_next/static/rEpVRygLyV6yJ0i_Ohw0C/_ssgManifest.js" defer="" crossorigin=""></script></head><body><div id="__next"><div class="container mx-auto px-4 py-8 max-w-4xl"><h1 class="text-4xl font-bold mb-4">Custom Features</h1><p class="text-xl text-gray-600 mb-8">Building custom features</p><div class="prose prose-lg max-w-none"><p>Before you begin building custom features for Lexical, it is crucial to familiarize yourself with the <a href="https://lexical.dev/docs/intro">Lexical docs</a>, particularly the &quot;Concepts&quot; section. This foundation is necessary for understanding Lexical&#x27;s core principles, such as nodes, editor state, and commands.</p>
+<p>Lexical features are designed to be modular, meaning each piece of functionality is encapsulated within just two specific interfaces: one for server-side code and one for client-side code.</p>
+<p>By convention, these are named <code>feature.server.ts</code> for server-side functionality and <code>feature.client.ts</code> for client-side functionality. The primary functionality is housed within <code>feature.server.ts</code>, which users will import into their projects. The client-side feature, although defined separately, is integrated and rendered server-side through the server feature.</p>
+<p>That way, we still maintain a clear boundary between server and client code, while also centralizing the code needed for a feature in basically one place. This approach is beneficial for managing all the bits and pieces which make up your feature as a whole, such as toolbar entries, buttons, or new nodes, allowing each feature to be neatly contained and managed independently.</p>
+<div class="p-4 my-4 rounded-lg border bg-yellow-50 border-yellow-200 text-yellow-800"><svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg><p><strong>Important:</strong>
+Do not import directly from core lexical packages - this may break in minor Payload version bumps.</p><p>Instead, import the re-exported versions from <code>@payloadcms/richtext-lexical</code>. For example, change <code>import { $insertNodeToNearestRoot } from &#x27;@lexical/utils&#x27;</code> to <code>import { $insertNodeToNearestRoot } from &#x27;@payloadcms/richtext-lexical/lexical/utils&#x27;</code></p></div>
+<h2>Do I need a custom feature?</h2>
+<p>Before you start building a custom feature, consider whether you can achieve your desired functionality using the existing <code>BlocksFeature</code>. The <code>BlocksFeature</code> is a powerful feature that allows you to create custom blocks with a variety of options, including custom React components, markdown converters, and more. If you can achieve your desired functionality using the <code>BlocksFeature</code>, it is recommended to use it instead of building a custom feature.</p>
+<p>Using the BlocksFeature, you can add both inline blocks (= can be inserted into a paragraph, in between text) and block blocks (= take up the whole line) to the editor. If you simply want to bring custom react components into the editor, this is the way to go.</p>
+<h3>Example: Code Field Block with language picker</h3>
+<p>This example demonstrates how to create a custom code field block with a language picker using the <code>BlocksFeature</code>. First, make sure to explicitly install <code>@payloadcms/ui</code> in your project.</p>
+<p>Field Config:</p>
+<pre><code class="language-ts">import {
+  BlocksFeature,
+  lexicalEditor,
+} from &#x27;@payloadcms/richtext-lexical&#x27;
+
+export const languages = {
+  ts: &#x27;TypeScript&#x27;,
+  plaintext: &#x27;Plain Text&#x27;,
+  tsx: &#x27;TSX&#x27;,
+  js: &#x27;JavaScript&#x27;,
+  jsx: &#x27;JSX&#x27;,
+}
+
+// ...
+{
+  name: &#x27;richText&#x27;,
+  type: &#x27;richText&#x27;,
+  editor: lexicalEditor({
+    features: ({ defaultFeatures }) =&gt; [
+      ...defaultFeatures,
+      BlocksFeature({
+        blocks: [
+          {
+            slug: &#x27;Code&#x27;,
+            fields: [
+              {
+                type: &#x27;select&#x27;,
+                name: &#x27;language&#x27;,
+                options: Object.entries(languages).map(([key, value]) =&gt; ({
+                  label: value,
+                  value: key,
+                })),
+                defaultValue: &#x27;ts&#x27;,
+              },
+              {
+                admin: {
+                  components: {
+                    Field: &#x27;./path/to/CodeComponent#Code&#x27;,
+                  },
+                },
+                name: &#x27;code&#x27;,
+                type: &#x27;code&#x27;,
+              },
+            ],
+          }
+        ],
+        inlineBlocks: [],
+      }),
+    ],
+  }),
+},
+</code></pre>
+<p>CodeComponent.tsx:</p>
+<pre><code class="language-tsx">&#x27;use client&#x27;
+import type { CodeFieldClient, CodeFieldClientProps } from &#x27;payload&#x27;
+
+import { CodeField, useFormFields } from &#x27;@payloadcms/ui&#x27;
+import React, { useMemo } from &#x27;react&#x27;
+
+import { languages } from &#x27;./yourFieldConfig&#x27;
+
+const languageKeyToMonacoLanguageMap = {
+  plaintext: &#x27;plaintext&#x27;,
+  ts: &#x27;typescript&#x27;,
+  tsx: &#x27;typescript&#x27;,
+}
+
+type Language = keyof typeof languageKeyToMonacoLanguageMap
+
+export const Code: React.FC&lt;CodeFieldClientProps&gt; = ({
+  autoComplete,
+  field,
+  forceRender,
+  path,
+  permissions,
+  readOnly,
+  renderedBlocks,
+  schemaPath,
+  validate,
+}) =&gt; {
+  const languageField = useFormFields(([fields]) =&gt; fields[&#x27;language&#x27;])
+
+  const language: Language =
+    (languageField?.value as Language) ||
+    (languageField?.initialValue as Language) ||
+    &#x27;ts&#x27;
+
+  const label = languages[language]
+
+  const props: CodeFieldClient = useMemo&lt;CodeFieldClient&gt;(
+    () =&gt; ({
+      ...field,
+      type: &#x27;code&#x27;,
+      admin: {
+        ...field.admin,
+        editorOptions: undefined,
+        language: languageKeyToMonacoLanguageMap[language] || language,
+      },
+      label,
+    }),
+    [field, language, label],
+  )
+
+  const key = `${field.name}-${language}-${label}`
+
+  return (
+    &lt;CodeField
+      autoComplete={autoComplete}
+      field={props}
+      forceRender={forceRender}
+      key={key}
+      path={path}
+      permissions={permissions}
+      readOnly={readOnly}
+      renderedBlocks={renderedBlocks}
+      schemaPath={schemaPath}
+      validate={validate}
+    /&gt;
+  )
+}
+</code></pre>
+<h2>Server Feature</h2>
+<p>Custom Blocks are not enough? To start building a custom feature, you should start with the server feature, which is the entry-point.</p>
+<p><strong>Example myFeature/feature.server.ts:</strong></p>
+<pre><code class="language-ts">import { createServerFeature } from &#x27;@payloadcms/richtext-lexical&#x27;
+
+export const MyFeature = createServerFeature({
+  feature: {},
+  key: &#x27;myFeature&#x27;,
+})
+</code></pre>
+<p><code>createServerFeature</code> is a helper function which lets you create new features without boilerplate code.</p>
+<p>Now, the feature is ready to be used in the editor:</p>
+<pre><code class="language-ts">import { MyFeature } from &#x27;./myFeature/feature.server&#x27;;
+import { lexicalEditor } from &#x27;@payloadcms/richtext-lexical&#x27;;
+
+//...
+ {
+    name: &#x27;richText&#x27;,
+    type: &#x27;richText&#x27;,
+    editor: lexicalEditor({
+      features: [
+        MyFeature(),
+      ],
+    }),
+ },
+</code></pre>
+<p>By default, this server feature does nothing - you haven&#x27;t added any functionality yet. Depending on what you want your feature to do, the ServerFeature type exposes various properties you can set to inject custom functionality into the lexical editor.</p>
+<h3>i18n</h3>
+<p>Each feature can register their own translations, which are automatically scoped to the feature key:</p>
+<pre><code class="language-ts">import { createServerFeature } from &#x27;@payloadcms/richtext-lexical&#x27;
+
+export const MyFeature = createServerFeature({
+  feature: {
+    i18n: {
+      en: {
+        label: &#x27;My Feature&#x27;,
+      },
+      de: {
+        label: &#x27;Mein Feature&#x27;,
+      },
+    },
+  },
+  key: &#x27;myFeature&#x27;,
+})
+</code></pre>
+<p>This allows you to add i18n translations scoped to your feature. This specific example translation will be available under <code>lexical:myFeature:label</code> - <code>myFeature</code> being your feature key.</p>
+<h3>Markdown Transformers#server-feature-markdown-transformers</h3>
+<p>The Server Feature, just like the Client Feature, allows you to add markdown transformers. Markdown transformers on the server are used when <a href="/docs/rich-text/converting-markdown">converting the editor from or to markdown</a>.</p>
+<pre><code class="language-ts">import { createServerFeature } from &#x27;@payloadcms/richtext-lexical&#x27;
+import type { ElementTransformer } from &#x27;@payloadcms/richtext-lexical/lexical/markdown&#x27;
+import { $createMyNode, $isMyNode, MyNode } from &#x27;./nodes/MyNode&#x27;
+
+const MyMarkdownTransformer: ElementTransformer = {
+  type: &#x27;element&#x27;,
+  dependencies: [MyNode],
+  export: (node, exportChildren) =&gt; {
+    if (!$isMyNode(node)) {
+      return null
+    }
+    return &#x27;+++&#x27;
+  },
+  // match ---
+  regExp: /^+++\s*$/,
+  replace: (parentNode) =&gt; {
+    const node = $createMyNode()
+    if (node) {
+      parentNode.replace(node)
+    }
+  },
+}
+
+export const MyFeature = createServerFeature({
+  feature: {
+    markdownTransformers: [MyMarkdownTransformer],
+  },
+  key: &#x27;myFeature&#x27;,
+})
+</code></pre>
+<p>In this example, the node will be outputted as <code>+++</code> in Markdown, and the markdown <code>+++</code> will be converted to a <code>MyNode</code> node in the editor.</p>
+<h3>Nodes#server-feature-nodes</h3>
+<p>While nodes added to the server feature do not control how the node is rendered in the editor, they control other aspects of the node:</p>
+<ul>
+<li>HTML conversion</li>
+<li>Node Hooks</li>
+<li>Sub fields</li>
+<li>Behavior in a headless editor</li>
+</ul>
+<p>The <code>createNode</code> helper function is used to create nodes with proper typing. It is recommended to use this function to create nodes.</p>
+<pre><code class="language-ts">import { createServerFeature, createNode } from &#x27;@payloadcms/richtext-lexical&#x27;
+import { MyNode } from &#x27;./nodes/MyNode&#x27;
+
+export const MyFeature = createServerFeature({
+  feature: {
+    nodes: [
+      // Use the createNode helper function to more easily create nodes with proper typing
+      createNode({
+        converters: {
+          html: {
+            converter: () =&gt; {
+              return `&lt;hr/&gt;`
+            },
+            nodeTypes: [MyNode.getType()],
+          },
+        },
+        // Here you can add your actual node. On the server, they will be
+        // used to initialize a headless editor which can be used to perform
+        // operations on the editor, like markdown / html conversion.
+        node: MyNode,
+      }),
+    ],
+  },
+  key: &#x27;myFeature&#x27;,
+})
+</code></pre>
+<p>While nodes in the client feature are added by themselves to the nodes array, nodes in the server feature can be added together with the following sibling options:</p>
+<div class="overflow-x-auto my-8"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr class="even:bg-gray-50"><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Option</th><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>getSubFields</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">If a node includes sub-fields (e.g. block and link nodes), passing the subFields schema here will make Payload automatically populate &amp; run hooks for them.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>getSubFieldsData</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">If a node includes sub-fields, the sub-fields data needs to be returned here, alongside <code>getSubFields</code> which returns their schema.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>graphQLPopulationPromises</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">Allows you to run population logic when a node&#x27;s data was requested from GraphQL. While <code>getSubFields</code> and <code>getSubFieldsData</code> automatically handle populating sub-fields (since they run hooks on them), those are only populated in the Rest API. This is because the Rest API hooks do not have access to the &#x27;depth&#x27; property provided by GraphQL. In order for them to be populated correctly in GraphQL, the population logic needs to be provided here.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>node</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">The actual lexical node needs to be provided here. This also supports <a href="https://lexical.dev/docs/concepts/node-replacement">lexical node replacements</a>.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>validations</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">This allows you to provide node validations, which are run when your document is being validated, alongside other Payload fields. You can use it to throw a validation error for a specific node in case its data is incorrect.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>converters</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">Allows you to define how a node can be serialized into different formats. Currently, only supports HTML. Markdown converters are defined in <code>markdownTransformers</code> and not here.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>hooks</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">Just like Payload fields, you can provide hooks which are run for this specific node. These are called Node Hooks.</td></tr></tbody></table></div>
+<h3>Feature load order</h3>
+<p>Server features can also accept a function as the <code>feature</code> property (useful for sanitizing props, as mentioned below). This function will be called when the feature is loaded during the Payload sanitization process:</p>
+<pre><code class="language-ts">import { createServerFeature } from &#x27;@payloadcms/richtext-lexical&#x27;
+
+createServerFeature({
+  //...
+  feature: async ({
+    config,
+    isRoot,
+    props,
+    resolvedFeatures,
+    unSanitizedEditorConfig,
+    featureProviderMap,
+  }) =&gt; {
+    return {
+      //Actual server feature here...
+    }
+  },
+})
+</code></pre>
+<p>&quot;Loading&quot; here means the process of calling this <code>feature</code> function. By default, features are called in the order in which they are added to the editor.
+However, sometimes you might want to load a feature after another feature has been loaded, or require a different feature to be loaded, throwing an error if this is not the case.</p>
+<p>Within lexical, one example where this is done are our list features. Both <code>UnorderedListFeature</code> and <code>OrderedListFeature</code> register the same <code>ListItem</code> node. Within <code>UnorderedListFeature</code> we register it normally, but within <code>OrderedListFeature</code> we want to only register the <code>ListItem</code> node if the <code>UnorderedListFeature</code> is not present - otherwise, we would have two features registering the same node.</p>
+<p>Here is how we do it:</p>
+<pre><code class="language-ts">import { createServerFeature, createNode } from &#x27;@payloadcms/richtext-lexical&#x27;
+
+export const OrderedListFeature = createServerFeature({
+  feature: ({ featureProviderMap }) =&gt; {
+    return {
+      // ...
+      nodes: featureProviderMap.has(&#x27;unorderedList&#x27;)
+        ? []
+        : [
+            createNode({
+              // ...
+            }),
+          ],
+    }
+  },
+  key: &#x27;orderedList&#x27;,
+})
+</code></pre>
+<p><code>featureProviderMap</code> will always be available and contain all the features, even yet-to-be-loaded ones, so we can check if a feature is loaded by checking if its <code>key</code> present in the map.</p>
+<p>If you wanted to make sure a feature is loaded before another feature, you can use the <code>dependenciesPriority</code> property:</p>
+<pre><code class="language-ts">import { createServerFeature } from &#x27;@payloadcms/richtext-lexical&#x27;
+
+export const MyFeature = createServerFeature({
+  feature: ({ featureProviderMap }) =&gt; {
+    return {
+      // ...
+    }
+  },
+  key: &#x27;myFeature&#x27;,
+  dependenciesPriority: [&#x27;otherFeature&#x27;],
+})
+</code></pre>
+<div class="overflow-x-auto my-8"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr class="even:bg-gray-50"><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Option</th><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>dependenciesSoft</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">Keys of soft-dependencies needed for this feature. These are optional. Payload will attempt to load them before this feature, but doesn&#x27;t throw an error if that&#x27;s not possible.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>dependencies</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">Keys of dependencies needed for this feature. These dependencies do not have to be loaded first, but they have to exist, otherwise an error will be thrown.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>dependenciesPriority</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">Keys of priority dependencies needed for this feature. These dependencies have to be loaded first AND have to exist, otherwise an error will be thrown. They will be available in the <code>feature</code> property.</td></tr></tbody></table></div>
+<h2>Client Feature</h2>
+<p>Most of the functionality which the user actually sees and interacts with, like toolbar items and React components for nodes, resides on the client-side.</p>
+<p>To set up your client-side feature, follow these three steps:</p>
+<ol>
+<li><strong>Create a Separate File</strong>: Start by creating a new file specifically for your client feature, such as <code>myFeature/feature.client.ts</code>. It&#x27;s important to keep client and server features in separate files to maintain a clean boundary between server and client code.</li>
+<li><strong>&#x27;use client&#x27;</strong>: Mark that file with a &#x27;use client&#x27; directive at the top of the file</li>
+<li><strong>Register the Client Feature</strong>: Register the client feature within your server feature, by passing it to the <code>ClientFeature</code> prop. This is needed because the server feature is the sole entry-point of your feature. This also means you are not able to create a client feature without a server feature, as you will not be able to register it otherwise.</li>
+</ol>
+<p><strong>Example myFeature/feature.client.ts:</strong></p>
+<pre><code class="language-ts">&#x27;use client&#x27;
+
+import { createClientFeature } from &#x27;@payloadcms/richtext-lexical/client&#x27;
+
+export const MyClientFeature = createClientFeature({})
+</code></pre>
+<p>Explore the APIs available through ClientFeature to add the specific functionality you need. Remember, do not import directly from <code>&#x27;@payloadcms/richtext-lexical&#x27;</code> when working on the client-side, as it will cause errors with webpack or turbopack. Instead, use <code>&#x27;@payloadcms/richtext-lexical/client&#x27;</code> for all client-side imports. Type-imports are excluded from this rule and can always be imported.</p>
+<h3>Adding a client feature to the server feature</h3>
+<p>Inside of your server feature, you can provide an <a href="/docs/custom-components/overview#component-paths">import path</a> to the client feature like this:</p>
+<pre><code class="language-ts">import { createServerFeature } from &#x27;@payloadcms/richtext-lexical&#x27;
+
+export const MyFeature = createServerFeature({
+  feature: {
+    ClientFeature: &#x27;./path/to/feature.client#MyClientFeature&#x27;,
+  },
+  key: &#x27;myFeature&#x27;,
+  dependenciesPriority: [&#x27;otherFeature&#x27;],
+})
+</code></pre>
+<h3>Nodes#client-feature-nodes</h3>
+<p>Add nodes to the <code>nodes</code> array in <strong>both</strong> your client &amp; server feature. On the server side, nodes are utilized for backend operations like HTML conversion in a headless editor. On the client side, these nodes are integral to how content is displayed and managed in the editor, influencing how they are rendered, behave, and saved in the database.</p>
+<p>Example:</p>
+<p><strong>myFeature/feature.client.ts:</strong></p>
+<pre><code class="language-ts">&#x27;use client&#x27;
+
+import { createClientFeature } from &#x27;@payloadcms/richtext-lexical/client&#x27;
+import { MyNode } from &#x27;./nodes/MyNode&#x27;
+
+export const MyClientFeature = createClientFeature({
+  nodes: [MyNode],
+})
+</code></pre>
+<p>This also supports <a href="https://lexical.dev/docs/concepts/node-replacement">lexical node replacements</a>.</p>
+<p><strong>myFeature/nodes/MyNode.tsx:</strong></p>
+<p>Here is a basic DecoratorNode example:</p>
+<pre><code class="language-ts">import type {
+  DOMConversionMap,
+  DOMConversionOutput,
+  DOMExportOutput,
+  EditorConfig,
+  LexicalNode,
+  SerializedLexicalNode,
+} from &#x27;@payloadcms/richtext-lexical/lexical&#x27;
+
+import { $applyNodeReplacement, DecoratorNode } from &#x27;@payloadcms/richtext-lexical/lexical&#x27;
+
+// SerializedLexicalNode is the default lexical node.
+// By setting your SerializedMyNode type to SerializedLexicalNode,
+// you are basically saying that this node does not save any additional data.
+// If you want your node to save data, feel free to extend it
+export type SerializedMyNode = SerializedLexicalNode
+
+// Lazy-import the React component to your node here
+const MyNodeComponent = React.lazy(() =&gt;
+  import(&#x27;../component/index.js&#x27;).then((module) =&gt; ({
+    default: module.MyNodeComponent,
+  })),
+)
+
+/**
+ * This node is a DecoratorNode. DecoratorNodes allow you to render React components in the editor.
+ *
+ * They need both createDom and decorate functions. createDom =&gt; outside of the html. decorate =&gt; React Component inside of the html.
+ *
+ * If we used DecoratorBlockNode instead, we would only need a decorate method
+ */
+export class MyNode extends DecoratorNode&lt;React.ReactElement&gt; {
+  static clone(node: MyNode): MyNode {
+    return new MyNode(node.__key)
+  }
+
+  static getType(): string {
+    return &#x27;myNode&#x27;
+  }
+
+  /**
+   * Defines what happens if you copy a div element from another page and paste it into the lexical editor
+   *
+   * This also determines the behavior of lexical&#x27;s internal HTML -&gt; Lexical converter
+   */
+  static importDOM(): DOMConversionMap | null {
+    return {
+      div: () =&gt; ({
+        conversion: $yourConversionMethod,
+        priority: 0,
+      }),
+    }
+  }
+
+  /**
+   * The data for this node is stored serialized as JSON. This is the &quot;load function&quot; of that node: it takes the saved data and converts it into a node.
+   */
+  static importJSON(serializedNode: SerializedMyNode): MyNode {
+    return $createMyNode()
+  }
+
+  /**
+   * Determines how the hr element is rendered in the lexical editor. This is only the &quot;initial&quot; / &quot;outer&quot; HTML element.
+   */
+  createDOM(config: EditorConfig): HTMLElement {
+    const element = document.createElement(&#x27;div&#x27;)
+    return element
+  }
+
+  /**
+   * Allows you to render a React component within whatever createDOM returns.
+   */
+  decorate(): React.ReactElement {
+    return &lt;MyNodeComponent nodeKey={this.__key} /&gt;
+  }
+
+  /**
+   * Opposite of importDOM, this function defines what happens when you copy a div element from the lexical editor and paste it into another page.
+   *
+   * This also determines the behavior of lexical&#x27;s internal Lexical -&gt; HTML converter
+   */
+  exportDOM(): DOMExportOutput {
+    return { element: document.createElement(&#x27;div&#x27;) }
+  }
+  /**
+   * Opposite of importJSON. This determines what data is saved in the database / in the lexical editor state.
+   */
+  exportJSON(): SerializedLexicalNode {
+    return {
+      type: &#x27;myNode&#x27;,
+      version: 1,
+    }
+  }
+
+  getTextContent(): string {
+    return &#x27;\n&#x27;
+  }
+
+  isInline(): false {
+    return false
+  }
+
+  updateDOM(): boolean {
+    return false
+  }
+}
+
+// This is used in the importDOM method. Totally optional if you do not want your node to be created automatically when copy &amp; pasting certain dom elements
+// into your editor.
+function $yourConversionMethod(): DOMConversionOutput {
+  return { node: $createMyNode() }
+}
+
+// This is a utility method to create a new MyNode. Utility methods prefixed with $ make it explicit that this should only be used within lexical
+export function $createMyNode(): MyNode {
+  return $applyNodeReplacement(new MyNode())
+}
+
+// This is just a utility method you can use to check if a node is a MyNode. This also ensures correct typing.
+export function $isMyNode(
+  node: LexicalNode | null | undefined,
+): node is MyNode {
+  return node instanceof MyNode
+}
+</code></pre>
+<p>Please do not add any &#x27;use client&#x27; directives to your nodes, as the node class can be used on the server.</p>
+<h3>Plugins</h3>
+<p>One small part of a feature are plugins. The name stems from the lexical playground plugins and is just a small part of a lexical feature.
+Plugins are simply React components which are added to the editor, within all the lexical context providers. They can be used to add any functionality
+to the editor, by utilizing the lexical API.</p>
+<p>Most commonly, they are used to register <a href="https://lexical.dev/docs/concepts/listeners">lexical listeners</a>, <a href="https://lexical.dev/docs/concepts/transforms">node transforms</a> or <a href="https://lexical.dev/docs/concepts/commands">commands</a>.
+For example, you could add a drawer to your plugin and register a command which opens it. That command can then be called from anywhere within lexical, e.g. from within your custom lexical node.</p>
+<p>To add a plugin, simply add it to the <code>plugins</code> array in your client feature:</p>
+<pre><code class="language-ts">&#x27;use client&#x27;
+
+import { createClientFeature } from &#x27;@payloadcms/richtext-lexical/client&#x27;
+import { MyPlugin } from &#x27;./plugin&#x27;
+
+export const MyClientFeature = createClientFeature({
+  plugins: [MyPlugin],
+})
+</code></pre>
+<p>Example plugin.tsx:</p>
+<pre><code class="language-ts">&#x27;use client&#x27;
+import type { LexicalCommand } from &#x27;@payloadcms/richtext-lexical/lexical&#x27;
+
+import {
+  createCommand,
+  $getSelection,
+  $isRangeSelection,
+  COMMAND_PRIORITY_EDITOR,
+} from &#x27;@payloadcms/richtext-lexical/lexical&#x27;
+
+import { useLexicalComposerContext } from &#x27;@payloadcms/richtext-lexical/lexical/react/LexicalComposerContext&#x27;
+import { $insertNodeToNearestRoot } from &#x27;@payloadcms/richtext-lexical/lexical/utils&#x27;
+import { useEffect } from &#x27;react&#x27;
+
+import type { PluginComponent } from &#x27;@payloadcms/richtext-lexical&#x27; // type imports can be imported from @payloadcms/richtext-lexical - even on the client
+
+import { $createMyNode } from &#x27;../nodes/MyNode&#x27;
+import &#x27;./index.scss&#x27;
+
+export const INSERT_MYNODE_COMMAND: LexicalCommand&lt;void&gt; = createCommand(
+  &#x27;INSERT_MYNODE_COMMAND&#x27;,
+)
+
+/**
+ * Plugin which registers a lexical command to insert a new MyNode into the editor
+ */
+export const MyNodePlugin: PluginComponent = () =&gt; {
+  // The useLexicalComposerContext hook can be used to access the lexical editor instance
+  const [editor] = useLexicalComposerContext()
+
+  useEffect(() =&gt; {
+    return editor.registerCommand(
+      INSERT_MYNODE_COMMAND,
+      (type) =&gt; {
+        const selection = $getSelection()
+
+        if (!$isRangeSelection(selection)) {
+          return false
+        }
+
+        const focusNode = selection.focus.getNode()
+
+        if (focusNode !== null) {
+          const newMyNode = $createMyNode()
+          $insertNodeToNearestRoot(newMyNode)
+        }
+
+        return true
+      },
+      COMMAND_PRIORITY_EDITOR,
+    )
+  }, [editor])
+
+  return null
+}
+</code></pre>
+<p>In this example, we register a lexical command, which simply inserts a new MyNode into the editor. This command can be called from anywhere within lexical, e.g. from within a custom node.</p>
+<h3>Toolbar groups</h3>
+<p>Toolbar groups are visual containers which hold toolbar items. There are different toolbar group types which determine <em>how</em> a toolbar item is displayed: <code>dropdown</code> and <code>buttons</code>.</p>
+<p>All the default toolbar groups are exported from <code>@payloadcms/richtext-lexical/client</code>. You can use them to add your own toolbar items to the editor:</p>
+<ul>
+<li>Dropdown: <code>toolbarAddDropdownGroupWithItems</code></li>
+<li>Dropdown: <code>toolbarTextDropdownGroupWithItems</code></li>
+<li>Buttons: <code>toolbarFormatGroupWithItems</code></li>
+<li>Buttons: <code>toolbarFeatureButtonsGroupWithItems</code></li>
+</ul>
+<p>Within dropdown groups, items are positioned vertically when the dropdown is opened and include the icon &amp; label. Within button groups, items are positioned horizontally and only include the icon. If a toolbar group with the same key is declared twice, all its items will be merged into one group.</p>
+<h4>Custom buttons toolbar group</h4>
+<div class="overflow-x-auto my-8"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr class="even:bg-gray-50"><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Option</th><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>items</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">All toolbar items part of this toolbar group need to be added here.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>key</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">Each toolbar group needs to have a unique key. Groups with the same keys will have their items merged together.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>order</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">Determines where the toolbar group will be.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>type</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">Controls the toolbar group type. Set to <code>buttons</code> to create a buttons toolbar group, which displays toolbar items horizontally using only their icons.</td></tr></tbody></table></div>
+<p>Example:</p>
+<pre><code class="language-ts">import type {
+  ToolbarGroup,
+  ToolbarGroupItem,
+} from &#x27;@payloadcms/richtext-lexical&#x27;
+
+export const toolbarFormatGroupWithItems = (
+  items: ToolbarGroupItem[],
+): ToolbarGroup =&gt; {
+  return {
+    type: &#x27;buttons&#x27;,
+    items,
+    key: &#x27;myButtonsToolbar&#x27;,
+    order: 10,
+  }
+}
+</code></pre>
+<h4>Custom dropdown toolbar group</h4>
+<div class="overflow-x-auto my-8"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr class="even:bg-gray-50"><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Option</th><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>items</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">All toolbar items part of this toolbar group need to be added here.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>key</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">Each toolbar group needs to have a unique key. Groups with the same keys will have their items merged together.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>order</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">Determines where the toolbar group will be.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>type</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">Controls the toolbar group type. Set to <code>dropdown</code> to create a buttons toolbar group, which displays toolbar items vertically using their icons and labels, if the dropdown is open.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>ChildComponent</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">The dropdown toolbar ChildComponent allows you to pass in a React Component which will be displayed within the dropdown button.</td></tr></tbody></table></div>
+<p>Example:</p>
+<pre><code class="language-ts">import type {
+  ToolbarGroup,
+  ToolbarGroupItem,
+} from &#x27;@payloadcms/richtext-lexical&#x27;
+
+import { MyIcon } from &#x27;./icons/MyIcon&#x27;
+
+export const toolbarAddDropdownGroupWithItems = (
+  items: ToolbarGroupItem[],
+): ToolbarGroup =&gt; {
+  return {
+    type: &#x27;dropdown&#x27;,
+    ChildComponent: MyIcon,
+    items,
+    key: &#x27;myDropdownToolbar&#x27;,
+    order: 10,
+  }
+}
+</code></pre>
+<h3>Toolbar items</h3>
+<p>Custom nodes and features on its own are pointless, if they can&#x27;t be added to the editor. You will need to hook in one of our interfaces which allow the user to interact with the editor:</p>
+<ul>
+<li>Fixed toolbar which stays fixed at the top of the editor</li>
+<li>Inline, floating toolbar which appears when selecting text</li>
+<li>Slash menu which appears when typing <code>/</code> in the editor</li>
+<li>Markdown transformers, which are triggered when a certain text pattern is typed in the editor</li>
+<li>Or any other interfaces which can be added via your own plugins. Our toolbars are a prime example of this - they are just plugins.</li>
+</ul>
+<p>To add a toolbar item to either the floating or the inline toolbar, you can add a ToolbarGroup with a ToolbarItem to the <code>toolbarFixed</code> or <code>toolbarInline</code> props of your client feature:</p>
+<pre><code class="language-ts">&#x27;use client&#x27;
+
+import {
+  createClientFeature,
+  toolbarAddDropdownGroupWithItems,
+} from &#x27;@payloadcms/richtext-lexical/client&#x27;
+import { IconComponent } from &#x27;./icon&#x27;
+import { $isHorizontalRuleNode } from &#x27;./nodes/MyNode&#x27;
+import { INSERT_MYNODE_COMMAND } from &#x27;./plugin&#x27;
+import { $isNodeSelection } from &#x27;@payloadcms/richtext-lexical/lexical&#x27;
+
+export const MyClientFeature = createClientFeature({
+  toolbarFixed: {
+    groups: [
+      toolbarAddDropdownGroupWithItems([
+        {
+          ChildComponent: IconComponent,
+          isActive: ({ selection }) =&gt; {
+            if (!$isNodeSelection(selection) || !selection.getNodes().length) {
+              return false
+            }
+
+            const firstNode = selection.getNodes()[0]
+            return $isHorizontalRuleNode(firstNode)
+          },
+          key: &#x27;myNode&#x27;,
+          label: ({ i18n }) =&gt; {
+            return i18n.t(&#x27;lexical:myFeature:label&#x27;)
+          },
+          onSelect: ({ editor }) =&gt; {
+            editor.dispatchCommand(INSERT_MYNODE_COMMAND, undefined)
+          },
+        },
+      ]),
+    ],
+  },
+})
+</code></pre>
+<p>You will have to provide a toolbar group first, and then the items for that toolbar group (more on that above).</p>
+<p>A <code>ToolbarItem</code> various props you can use to customize its behavior:</p>
+<div class="overflow-x-auto my-8"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr class="even:bg-gray-50"><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Option</th><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>ChildComponent</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">A React component which is rendered within your toolbar item&#x27;s default button component. Usually, you want this to be an icon.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>Component</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">A React component which is rendered in place of the toolbar item&#x27;s default button component, thus completely replacing it. The <code>ChildComponent</code> and <code>onSelect</code> properties will be ignored.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>label</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">The label will be displayed in your toolbar item, if it&#x27;s within a dropdown group. To make use of i18n, this can be a function.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>key</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">Each toolbar item needs to have a unique key.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>onSelect</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">A function which is called when the toolbar item is clicked.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>isEnabled</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">This is optional and controls if the toolbar item is clickable or not. If <code>false</code> is returned here, it will be grayed out and unclickable.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>isActive</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">This is optional and controls if the toolbar item is highlighted or not</td></tr></tbody></table></div>
+<p>The API for adding an item to the floating inline toolbar (<code>toolbarInline</code>) is identical. If you wanted to add an item to both the fixed and inline toolbar, you can extract it into its own variable
+(typed as <code>ToolbarGroup[]</code>) and add it to both the <code>toolbarFixed</code> and <code>toolbarInline</code> props.</p>
+<h3>Slash Menu groups</h3>
+<p>We&#x27;re exporting <code>slashMenuBasicGroupWithItems</code> from <code>@payloadcms/richtext-lexical/client</code> which you can use to add items to the slash menu labelled &quot;Basic&quot;. If you want to create your own slash menu group, here is an example:</p>
+<pre><code class="language-ts">import type {
+  SlashMenuGroup,
+  SlashMenuItem,
+} from &#x27;@payloadcms/richtext-lexical&#x27;
+
+export function mwnSlashMenuGroupWithItems(
+  items: SlashMenuItem[],
+): SlashMenuGroup {
+  return {
+    items,
+    key: &#x27;myGroup&#x27;,
+    label: &#x27;My Group&#x27;, // &lt;= This can be a function to make use of i18n
+  }
+}
+</code></pre>
+<p>By creating a helper function like this, you can easily re-use it and add items to it. All Slash Menu groups with the same keys will have their items merged together.</p>
+<div class="overflow-x-auto my-8"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr class="even:bg-gray-50"><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Option</th><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>items</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">An array of <code>SlashMenuItem</code>&#x27;s which will be displayed in the slash menu.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>label</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">The label will be displayed before your Slash Menu group. In order to make use of i18n, this can be a function.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>key</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">Used for class names and, if label is not provided, for display. Slash menus with the same key will have their items merged together.</td></tr></tbody></table></div>
+<h3>Slash Menu items</h3>
+<p>The API for adding items to the slash menu is similar. There are slash menu groups, and each slash menu groups has items. Here is an example:</p>
+<pre><code class="language-ts">&#x27;use client&#x27;
+
+import {
+  createClientFeature,
+  slashMenuBasicGroupWithItems,
+} from &#x27;@payloadcms/richtext-lexical/client&#x27;
+import { INSERT_MYNODE_COMMAND } from &#x27;./plugin&#x27;
+import { IconComponent } from &#x27;./icon&#x27;
+
+export const MyClientFeature = createClientFeature({
+  slashMenu: {
+    groups: [
+      slashMenuBasicGroupWithItems([
+        {
+          Icon: IconComponent,
+          key: &#x27;myNode&#x27;,
+          keywords: [&#x27;myNode&#x27;, &#x27;myFeature&#x27;, &#x27;someOtherKeyword&#x27;],
+          label: ({ i18n }) =&gt; {
+            return i18n.t(&#x27;lexical:myFeature:label&#x27;)
+          },
+          onSelect: ({ editor }) =&gt; {
+            editor.dispatchCommand(INSERT_MYNODE_COMMAND, undefined)
+          },
+        },
+      ]),
+    ],
+  },
+})
+</code></pre>
+<div class="overflow-x-auto my-8"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr class="even:bg-gray-50"><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Option</th><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>Icon</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">The icon which is rendered in your slash menu item.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>label</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">The label will be displayed in your slash menu item. In order to make use of i18n, this can be a function.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>key</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">Each slash menu item needs to have a unique key. The key will be matched when typing, displayed if no <code>label</code> property is set, and used for classNames.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>onSelect</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">A function which is called when the slash menu item is selected.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>keywords</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">Keywords are used to match the item for different texts typed after the &#x27;/&#x27;. E.g. you might want to show a horizontal rule item if you type both /hr, /separator, /horizontal etc. In addition to the keywords, the label and key will be used to find the right slash menu item.</td></tr></tbody></table></div>
+<h3>Markdown Transformers#client-feature-markdown-transformers</h3>
+<p>The Client Feature, just like the Server Feature, allows you to add markdown transformers. Markdown transformers on the client are used to create new nodes when a certain markdown pattern is typed in the editor.</p>
+<pre><code class="language-ts">import { createClientFeature } from &#x27;@payloadcms/richtext-lexical/client&#x27;
+import type { ElementTransformer } from &#x27;@payloadcms/richtext-lexical/lexical/markdown&#x27;
+import { $createMyNode, $isMyNode, MyNode } from &#x27;./nodes/MyNode&#x27;
+
+const MyMarkdownTransformer: ElementTransformer = {
+  type: &#x27;element&#x27;,
+  dependencies: [MyNode],
+  export: (node, exportChildren) =&gt; {
+    if (!$isMyNode(node)) {
+      return null
+    }
+    return &#x27;+++&#x27;
+  },
+  // match ---
+  regExp: /^+++\s*$/,
+  replace: (parentNode) =&gt; {
+    const node = $createMyNode()
+    if (node) {
+      parentNode.replace(node)
+    }
+  },
+}
+
+export const MyFeature = createClientFeature({
+  markdownTransformers: [MyMarkdownTransformer],
+})
+</code></pre>
+<p>In this example, a new <code>MyNode</code> will be inserted into the editor when <code>+++ </code> is typed.</p>
+<h3>Providers</h3>
+<p>You can add providers to your client feature, which will be nested below the <code>EditorConfigProvider</code>. This can be useful if you want to provide some context to your nodes or other parts of your feature.</p>
+<pre><code class="language-ts">&#x27;use client&#x27;
+
+import { createClientFeature } from &#x27;@payloadcms/richtext-lexical/client&#x27;
+import { TableContext } from &#x27;./context&#x27;
+
+export const MyClientFeature = createClientFeature({
+  providers: [TableContext],
+})
+</code></pre>
+<h2>Props</h2>
+<p>To accept props in your feature, type them as a generic.</p>
+<p>Server Feature:</p>
+<pre><code class="language-ts">createServerFeature&lt;UnSanitizedProps, SanitizedProps, UnSanitizedClientProps&gt;({
+  //...
+})
+</code></pre>
+<p>Client Feature:</p>
+<pre><code class="language-ts">createClientFeature&lt;UnSanitizedClientProps, SanitizedClientProps&gt;({
+  //...
+})
+</code></pre>
+<p>The unSanitized props are what the user will pass to the feature when they call its provider function and add it to their editor config. You then have an option to sanitize those props.
+To sanitize those in the server feature, you can pass a function to <code>feature</code> instead of an object:</p>
+<pre><code class="language-ts">createServerFeature&lt;UnSanitizedProps, SanitizedProps, UnSanitizedClientProps&gt;({
+  //...
+  feature: async ({
+    config,
+    isRoot,
+    props,
+    resolvedFeatures,
+    unSanitizedEditorConfig,
+    featureProviderMap,
+  }) =&gt; {
+    const sanitizedProps = doSomethingWithProps(props)
+
+    return {
+      sanitizedServerFeatureProps: sanitizedProps,
+      //Actual server feature here...
+    }
+  },
+})
+</code></pre>
+<p>Keep in mind that any sanitized props then have to be returned in the <code>sanitizedServerFeatureProps</code> property.</p>
+<p>In the client feature, it works similarly:</p>
+<pre><code class="language-ts">createClientFeature&lt;UnSanitizedClientProps, SanitizedClientProps&gt;(
+  ({
+    clientFunctions,
+    featureProviderMap,
+    props,
+    resolvedFeatures,
+    unSanitizedEditorConfig,
+  }) =&gt; {
+    const sanitizedProps = doSomethingWithProps(props)
+    return {
+      sanitizedClientFeatureProps: sanitizedProps,
+      //Actual client feature here...
+    }
+  },
+)
+</code></pre>
+<h3>Bringing props from the server to the client</h3>
+<p>By default, the client feature will never receive any props from the server feature. In order to pass props from the server to the client, you can need to return those props in the server feature:</p>
+<pre><code class="language-ts">type UnSanitizedClientProps = {
+  test: string
+}
+
+createServerFeature&lt;UnSanitizedProps, SanitizedProps, UnSanitizedClientProps&gt;({
+  //...
+  feature: {
+    clientFeatureProps: {
+      test: &#x27;myValue&#x27;,
+    },
+  },
+})
+</code></pre>
+<p>The reason the client feature does not have the same props available as the server by default is because all client props need to be serializable. You can totally accept things like functions or Maps as props in your server feature, but you will not be able to send those to the client. In the end, those props are sent from the server to the client over the network, so they need to be serializable.</p>
+<h2>More information</h2>
+<p>Have a look at the <a href="https://github.com/payloadcms/payload/tree/main/packages/richtext-lexical/src/features">features we&#x27;ve already built</a> - understanding how they work will help you understand how to create your own. There is no difference between the features included by default and the ones you create yourself - since those features are all isolated from the &quot;core&quot;, you have access to the same APIs, whether the feature is part of Payload or not!</p></div></div></div><script id="__NEXT_DATA__" type="application/json" crossorigin="">{"props":{"pageProps":{"frontMatter":{"title":"Custom Features","label":"Custom Features","order":40,"desc":"Building custom features","keywords":"lexical, rich text, editor, headless cms, feature, features"},"content":{"compiledSource":"/*@jsxRuntime automatic @jsxImportSource react*/\nconst {Fragment: _Fragment, jsx: _jsx, jsxs: _jsxs} = arguments[0];\nconst {useMDXComponents: _provideComponents} = arguments[0];\nfunction _createMdxContent(props) {\n  const _components = Object.assign({\n    p: \"p\",\n    a: \"a\",\n    code: \"code\",\n    strong: \"strong\",\n    h2: \"h2\",\n    h3: \"h3\",\n    pre: \"pre\",\n    ul: \"ul\",\n    li: \"li\",\n    table: \"table\",\n    thead: \"thead\",\n    tr: \"tr\",\n    th: \"th\",\n    tbody: \"tbody\",\n    td: \"td\",\n    ol: \"ol\",\n    em: \"em\",\n    h4: \"h4\"\n  }, _provideComponents(), props.components), {Banner} = _components;\n  if (!Banner) _missingMdxReference(\"Banner\", true);\n  return _jsxs(_Fragment, {\n    children: [_jsxs(_components.p, {\n      children: [\"Before you begin building custom features for Lexical, it is crucial to familiarize yourself with the \", _jsx(_components.a, {\n        href: \"https://lexical.dev/docs/intro\",\n        children: \"Lexical docs\"\n      }), \", particularly the \\\"Concepts\\\" section. This foundation is necessary for understanding Lexical's core principles, such as nodes, editor state, and commands.\"]\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Lexical features are designed to be modular, meaning each piece of functionality is encapsulated within just two specific interfaces: one for server-side code and one for client-side code.\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"By convention, these are named \", _jsx(_components.code, {\n        children: \"feature.server.ts\"\n      }), \" for server-side functionality and \", _jsx(_components.code, {\n        children: \"feature.client.ts\"\n      }), \" for client-side functionality. The primary functionality is housed within \", _jsx(_components.code, {\n        children: \"feature.server.ts\"\n      }), \", which users will import into their projects. The client-side feature, although defined separately, is integrated and rendered server-side through the server feature.\"]\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"That way, we still maintain a clear boundary between server and client code, while also centralizing the code needed for a feature in basically one place. This approach is beneficial for managing all the bits and pieces which make up your feature as a whole, such as toolbar entries, buttons, or new nodes, allowing each feature to be neatly contained and managed independently.\"\n    }), \"\\n\", _jsxs(Banner, {\n      type: \"warning\",\n      children: [_jsxs(_components.p, {\n        children: [_jsx(_components.strong, {\n          children: \"Important:\"\n        }), \"\\nDo not import directly from core lexical packages - this may break in minor Payload version bumps.\"]\n      }), _jsxs(_components.p, {\n        children: [\"Instead, import the re-exported versions from \", _jsx(_components.code, {\n          children: \"@payloadcms/richtext-lexical\"\n        }), \". For example, change \", _jsx(_components.code, {\n          children: \"import { $insertNodeToNearestRoot } from '@lexical/utils'\"\n        }), \" to \", _jsx(_components.code, {\n          children: \"import { $insertNodeToNearestRoot } from '@payloadcms/richtext-lexical/lexical/utils'\"\n        })]\n      })]\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"Do I need a custom feature?\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Before you start building a custom feature, consider whether you can achieve your desired functionality using the existing \", _jsx(_components.code, {\n        children: \"BlocksFeature\"\n      }), \". The \", _jsx(_components.code, {\n        children: \"BlocksFeature\"\n      }), \" is a powerful feature that allows you to create custom blocks with a variety of options, including custom React components, markdown converters, and more. If you can achieve your desired functionality using the \", _jsx(_components.code, {\n        children: \"BlocksFeature\"\n      }), \", it is recommended to use it instead of building a custom feature.\"]\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Using the BlocksFeature, you can add both inline blocks (= can be inserted into a paragraph, in between text) and block blocks (= take up the whole line) to the editor. If you simply want to bring custom react components into the editor, this is the way to go.\"\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Example: Code Field Block with language picker\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"This example demonstrates how to create a custom code field block with a language picker using the \", _jsx(_components.code, {\n        children: \"BlocksFeature\"\n      }), \". First, make sure to explicitly install \", _jsx(_components.code, {\n        children: \"@payloadcms/ui\"\n      }), \" in your project.\"]\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Field Config:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import {\\n  BlocksFeature,\\n  lexicalEditor,\\n} from '@payloadcms/richtext-lexical'\\n\\nexport const languages = {\\n  ts: 'TypeScript',\\n  plaintext: 'Plain Text',\\n  tsx: 'TSX',\\n  js: 'JavaScript',\\n  jsx: 'JSX',\\n}\\n\\n// ...\\n{\\n  name: 'richText',\\n  type: 'richText',\\n  editor: lexicalEditor({\\n    features: ({ defaultFeatures }) =\u003e [\\n      ...defaultFeatures,\\n      BlocksFeature({\\n        blocks: [\\n          {\\n            slug: 'Code',\\n            fields: [\\n              {\\n                type: 'select',\\n                name: 'language',\\n                options: Object.entries(languages).map(([key, value]) =\u003e ({\\n                  label: value,\\n                  value: key,\\n                })),\\n                defaultValue: 'ts',\\n              },\\n              {\\n                admin: {\\n                  components: {\\n                    Field: './path/to/CodeComponent#Code',\\n                  },\\n                },\\n                name: 'code',\\n                type: 'code',\\n              },\\n            ],\\n          }\\n        ],\\n        inlineBlocks: [],\\n      }),\\n    ],\\n  }),\\n},\\n\"\n      })\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"CodeComponent.tsx:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-tsx\",\n        children: \"'use client'\\nimport type { CodeFieldClient, CodeFieldClientProps } from 'payload'\\n\\nimport { CodeField, useFormFields } from '@payloadcms/ui'\\nimport React, { useMemo } from 'react'\\n\\nimport { languages } from './yourFieldConfig'\\n\\nconst languageKeyToMonacoLanguageMap = {\\n  plaintext: 'plaintext',\\n  ts: 'typescript',\\n  tsx: 'typescript',\\n}\\n\\ntype Language = keyof typeof languageKeyToMonacoLanguageMap\\n\\nexport const Code: React.FC\u003cCodeFieldClientProps\u003e = ({\\n  autoComplete,\\n  field,\\n  forceRender,\\n  path,\\n  permissions,\\n  readOnly,\\n  renderedBlocks,\\n  schemaPath,\\n  validate,\\n}) =\u003e {\\n  const languageField = useFormFields(([fields]) =\u003e fields['language'])\\n\\n  const language: Language =\\n    (languageField?.value as Language) ||\\n    (languageField?.initialValue as Language) ||\\n    'ts'\\n\\n  const label = languages[language]\\n\\n  const props: CodeFieldClient = useMemo\u003cCodeFieldClient\u003e(\\n    () =\u003e ({\\n      ...field,\\n      type: 'code',\\n      admin: {\\n        ...field.admin,\\n        editorOptions: undefined,\\n        language: languageKeyToMonacoLanguageMap[language] || language,\\n      },\\n      label,\\n    }),\\n    [field, language, label],\\n  )\\n\\n  const key = `${field.name}-${language}-${label}`\\n\\n  return (\\n    \u003cCodeField\\n      autoComplete={autoComplete}\\n      field={props}\\n      forceRender={forceRender}\\n      key={key}\\n      path={path}\\n      permissions={permissions}\\n      readOnly={readOnly}\\n      renderedBlocks={renderedBlocks}\\n      schemaPath={schemaPath}\\n      validate={validate}\\n    /\u003e\\n  )\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"Server Feature\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Custom Blocks are not enough? To start building a custom feature, you should start with the server feature, which is the entry-point.\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: _jsx(_components.strong, {\n        children: \"Example myFeature/feature.server.ts:\"\n      })\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import { createServerFeature } from '@payloadcms/richtext-lexical'\\n\\nexport const MyFeature = createServerFeature({\\n  feature: {},\\n  key: 'myFeature',\\n})\\n\"\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [_jsx(_components.code, {\n        children: \"createServerFeature\"\n      }), \" is a helper function which lets you create new features without boilerplate code.\"]\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Now, the feature is ready to be used in the editor:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import { MyFeature } from './myFeature/feature.server';\\nimport { lexicalEditor } from '@payloadcms/richtext-lexical';\\n\\n//...\\n {\\n    name: 'richText',\\n    type: 'richText',\\n    editor: lexicalEditor({\\n      features: [\\n        MyFeature(),\\n      ],\\n    }),\\n },\\n\"\n      })\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"By default, this server feature does nothing - you haven't added any functionality yet. Depending on what you want your feature to do, the ServerFeature type exposes various properties you can set to inject custom functionality into the lexical editor.\"\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"i18n\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Each feature can register their own translations, which are automatically scoped to the feature key:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import { createServerFeature } from '@payloadcms/richtext-lexical'\\n\\nexport const MyFeature = createServerFeature({\\n  feature: {\\n    i18n: {\\n      en: {\\n        label: 'My Feature',\\n      },\\n      de: {\\n        label: 'Mein Feature',\\n      },\\n    },\\n  },\\n  key: 'myFeature',\\n})\\n\"\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"This allows you to add i18n translations scoped to your feature. This specific example translation will be available under \", _jsx(_components.code, {\n        children: \"lexical:myFeature:label\"\n      }), \" - \", _jsx(_components.code, {\n        children: \"myFeature\"\n      }), \" being your feature key.\"]\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Markdown Transformers#server-feature-markdown-transformers\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"The Server Feature, just like the Client Feature, allows you to add markdown transformers. Markdown transformers on the server are used when \", _jsx(_components.a, {\n        href: \"/docs/rich-text/converting-markdown\",\n        children: \"converting the editor from or to markdown\"\n      }), \".\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import { createServerFeature } from '@payloadcms/richtext-lexical'\\nimport type { ElementTransformer } from '@payloadcms/richtext-lexical/lexical/markdown'\\nimport { $createMyNode, $isMyNode, MyNode } from './nodes/MyNode'\\n\\nconst MyMarkdownTransformer: ElementTransformer = {\\n  type: 'element',\\n  dependencies: [MyNode],\\n  export: (node, exportChildren) =\u003e {\\n    if (!$isMyNode(node)) {\\n      return null\\n    }\\n    return '+++'\\n  },\\n  // match ---\\n  regExp: /^+++\\\\s*$/,\\n  replace: (parentNode) =\u003e {\\n    const node = $createMyNode()\\n    if (node) {\\n      parentNode.replace(node)\\n    }\\n  },\\n}\\n\\nexport const MyFeature = createServerFeature({\\n  feature: {\\n    markdownTransformers: [MyMarkdownTransformer],\\n  },\\n  key: 'myFeature',\\n})\\n\"\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"In this example, the node will be outputted as \", _jsx(_components.code, {\n        children: \"+++\"\n      }), \" in Markdown, and the markdown \", _jsx(_components.code, {\n        children: \"+++\"\n      }), \" will be converted to a \", _jsx(_components.code, {\n        children: \"MyNode\"\n      }), \" node in the editor.\"]\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Nodes#server-feature-nodes\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"While nodes added to the server feature do not control how the node is rendered in the editor, they control other aspects of the node:\"\n    }), \"\\n\", _jsxs(_components.ul, {\n      children: [\"\\n\", _jsx(_components.li, {\n        children: \"HTML conversion\"\n      }), \"\\n\", _jsx(_components.li, {\n        children: \"Node Hooks\"\n      }), \"\\n\", _jsx(_components.li, {\n        children: \"Sub fields\"\n      }), \"\\n\", _jsx(_components.li, {\n        children: \"Behavior in a headless editor\"\n      }), \"\\n\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"The \", _jsx(_components.code, {\n        children: \"createNode\"\n      }), \" helper function is used to create nodes with proper typing. It is recommended to use this function to create nodes.\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import { createServerFeature, createNode } from '@payloadcms/richtext-lexical'\\nimport { MyNode } from './nodes/MyNode'\\n\\nexport const MyFeature = createServerFeature({\\n  feature: {\\n    nodes: [\\n      // Use the createNode helper function to more easily create nodes with proper typing\\n      createNode({\\n        converters: {\\n          html: {\\n            converter: () =\u003e {\\n              return `\u003chr/\u003e`\\n            },\\n            nodeTypes: [MyNode.getType()],\\n          },\\n        },\\n        // Here you can add your actual node. On the server, they will be\\n        // used to initialize a headless editor which can be used to perform\\n        // operations on the editor, like markdown / html conversion.\\n        node: MyNode,\\n      }),\\n    ],\\n  },\\n  key: 'myFeature',\\n})\\n\"\n      })\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"While nodes in the client feature are added by themselves to the nodes array, nodes in the server feature can be added together with the following sibling options:\"\n    }), \"\\n\", _jsxs(_components.table, {\n      children: [_jsx(_components.thead, {\n        children: _jsxs(_components.tr, {\n          children: [_jsx(_components.th, {\n            children: \"Option\"\n          }), _jsx(_components.th, {\n            children: \"Description\"\n          })]\n        })\n      }), _jsxs(_components.tbody, {\n        children: [_jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"getSubFields\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"If a node includes sub-fields (e.g. block and link nodes), passing the subFields schema here will make Payload automatically populate \u0026 run hooks for them.\"\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"getSubFieldsData\"\n              })\n            })\n          }), _jsxs(_components.td, {\n            children: [\"If a node includes sub-fields, the sub-fields data needs to be returned here, alongside \", _jsx(_components.code, {\n              children: \"getSubFields\"\n            }), \" which returns their schema.\"]\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"graphQLPopulationPromises\"\n              })\n            })\n          }), _jsxs(_components.td, {\n            children: [\"Allows you to run population logic when a node's data was requested from GraphQL. While \", _jsx(_components.code, {\n              children: \"getSubFields\"\n            }), \" and \", _jsx(_components.code, {\n              children: \"getSubFieldsData\"\n            }), \" automatically handle populating sub-fields (since they run hooks on them), those are only populated in the Rest API. This is because the Rest API hooks do not have access to the 'depth' property provided by GraphQL. In order for them to be populated correctly in GraphQL, the population logic needs to be provided here.\"]\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"node\"\n              })\n            })\n          }), _jsxs(_components.td, {\n            children: [\"The actual lexical node needs to be provided here. This also supports \", _jsx(_components.a, {\n              href: \"https://lexical.dev/docs/concepts/node-replacement\",\n              children: \"lexical node replacements\"\n            }), \".\"]\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"validations\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"This allows you to provide node validations, which are run when your document is being validated, alongside other Payload fields. You can use it to throw a validation error for a specific node in case its data is incorrect.\"\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"converters\"\n              })\n            })\n          }), _jsxs(_components.td, {\n            children: [\"Allows you to define how a node can be serialized into different formats. Currently, only supports HTML. Markdown converters are defined in \", _jsx(_components.code, {\n              children: \"markdownTransformers\"\n            }), \" and not here.\"]\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"hooks\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"Just like Payload fields, you can provide hooks which are run for this specific node. These are called Node Hooks.\"\n          })]\n        })]\n      })]\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Feature load order\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Server features can also accept a function as the \", _jsx(_components.code, {\n        children: \"feature\"\n      }), \" property (useful for sanitizing props, as mentioned below). This function will be called when the feature is loaded during the Payload sanitization process:\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import { createServerFeature } from '@payloadcms/richtext-lexical'\\n\\ncreateServerFeature({\\n  //...\\n  feature: async ({\\n    config,\\n    isRoot,\\n    props,\\n    resolvedFeatures,\\n    unSanitizedEditorConfig,\\n    featureProviderMap,\\n  }) =\u003e {\\n    return {\\n      //Actual server feature here...\\n    }\\n  },\\n})\\n\"\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"\\\"Loading\\\" here means the process of calling this \", _jsx(_components.code, {\n        children: \"feature\"\n      }), \" function. By default, features are called in the order in which they are added to the editor.\\nHowever, sometimes you might want to load a feature after another feature has been loaded, or require a different feature to be loaded, throwing an error if this is not the case.\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Within lexical, one example where this is done are our list features. Both \", _jsx(_components.code, {\n        children: \"UnorderedListFeature\"\n      }), \" and \", _jsx(_components.code, {\n        children: \"OrderedListFeature\"\n      }), \" register the same \", _jsx(_components.code, {\n        children: \"ListItem\"\n      }), \" node. Within \", _jsx(_components.code, {\n        children: \"UnorderedListFeature\"\n      }), \" we register it normally, but within \", _jsx(_components.code, {\n        children: \"OrderedListFeature\"\n      }), \" we want to only register the \", _jsx(_components.code, {\n        children: \"ListItem\"\n      }), \" node if the \", _jsx(_components.code, {\n        children: \"UnorderedListFeature\"\n      }), \" is not present - otherwise, we would have two features registering the same node.\"]\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Here is how we do it:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import { createServerFeature, createNode } from '@payloadcms/richtext-lexical'\\n\\nexport const OrderedListFeature = createServerFeature({\\n  feature: ({ featureProviderMap }) =\u003e {\\n    return {\\n      // ...\\n      nodes: featureProviderMap.has('unorderedList')\\n        ? []\\n        : [\\n            createNode({\\n              // ...\\n            }),\\n          ],\\n    }\\n  },\\n  key: 'orderedList',\\n})\\n\"\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [_jsx(_components.code, {\n        children: \"featureProviderMap\"\n      }), \" will always be available and contain all the features, even yet-to-be-loaded ones, so we can check if a feature is loaded by checking if its \", _jsx(_components.code, {\n        children: \"key\"\n      }), \" present in the map.\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"If you wanted to make sure a feature is loaded before another feature, you can use the \", _jsx(_components.code, {\n        children: \"dependenciesPriority\"\n      }), \" property:\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import { createServerFeature } from '@payloadcms/richtext-lexical'\\n\\nexport const MyFeature = createServerFeature({\\n  feature: ({ featureProviderMap }) =\u003e {\\n    return {\\n      // ...\\n    }\\n  },\\n  key: 'myFeature',\\n  dependenciesPriority: ['otherFeature'],\\n})\\n\"\n      })\n    }), \"\\n\", _jsxs(_components.table, {\n      children: [_jsx(_components.thead, {\n        children: _jsxs(_components.tr, {\n          children: [_jsx(_components.th, {\n            children: \"Option\"\n          }), _jsx(_components.th, {\n            children: \"Description\"\n          })]\n        })\n      }), _jsxs(_components.tbody, {\n        children: [_jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"dependenciesSoft\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"Keys of soft-dependencies needed for this feature. These are optional. Payload will attempt to load them before this feature, but doesn't throw an error if that's not possible.\"\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"dependencies\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"Keys of dependencies needed for this feature. These dependencies do not have to be loaded first, but they have to exist, otherwise an error will be thrown.\"\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"dependenciesPriority\"\n              })\n            })\n          }), _jsxs(_components.td, {\n            children: [\"Keys of priority dependencies needed for this feature. These dependencies have to be loaded first AND have to exist, otherwise an error will be thrown. They will be available in the \", _jsx(_components.code, {\n              children: \"feature\"\n            }), \" property.\"]\n          })]\n        })]\n      })]\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"Client Feature\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Most of the functionality which the user actually sees and interacts with, like toolbar items and React components for nodes, resides on the client-side.\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"To set up your client-side feature, follow these three steps:\"\n    }), \"\\n\", _jsxs(_components.ol, {\n      children: [\"\\n\", _jsxs(_components.li, {\n        children: [_jsx(_components.strong, {\n          children: \"Create a Separate File\"\n        }), \": Start by creating a new file specifically for your client feature, such as \", _jsx(_components.code, {\n          children: \"myFeature/feature.client.ts\"\n        }), \". It's important to keep client and server features in separate files to maintain a clean boundary between server and client code.\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [_jsx(_components.strong, {\n          children: \"'use client'\"\n        }), \": Mark that file with a 'use client' directive at the top of the file\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [_jsx(_components.strong, {\n          children: \"Register the Client Feature\"\n        }), \": Register the client feature within your server feature, by passing it to the \", _jsx(_components.code, {\n          children: \"ClientFeature\"\n        }), \" prop. This is needed because the server feature is the sole entry-point of your feature. This also means you are not able to create a client feature without a server feature, as you will not be able to register it otherwise.\"]\n      }), \"\\n\"]\n    }), \"\\n\", _jsx(_components.p, {\n      children: _jsx(_components.strong, {\n        children: \"Example myFeature/feature.client.ts:\"\n      })\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"'use client'\\n\\nimport { createClientFeature } from '@payloadcms/richtext-lexical/client'\\n\\nexport const MyClientFeature = createClientFeature({})\\n\"\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Explore the APIs available through ClientFeature to add the specific functionality you need. Remember, do not import directly from \", _jsx(_components.code, {\n        children: \"'@payloadcms/richtext-lexical'\"\n      }), \" when working on the client-side, as it will cause errors with webpack or turbopack. Instead, use \", _jsx(_components.code, {\n        children: \"'@payloadcms/richtext-lexical/client'\"\n      }), \" for all client-side imports. Type-imports are excluded from this rule and can always be imported.\"]\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Adding a client feature to the server feature\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Inside of your server feature, you can provide an \", _jsx(_components.a, {\n        href: \"/docs/custom-components/overview#component-paths\",\n        children: \"import path\"\n      }), \" to the client feature like this:\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import { createServerFeature } from '@payloadcms/richtext-lexical'\\n\\nexport const MyFeature = createServerFeature({\\n  feature: {\\n    ClientFeature: './path/to/feature.client#MyClientFeature',\\n  },\\n  key: 'myFeature',\\n  dependenciesPriority: ['otherFeature'],\\n})\\n\"\n      })\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Nodes#client-feature-nodes\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Add nodes to the \", _jsx(_components.code, {\n        children: \"nodes\"\n      }), \" array in \", _jsx(_components.strong, {\n        children: \"both\"\n      }), \" your client \u0026 server feature. On the server side, nodes are utilized for backend operations like HTML conversion in a headless editor. On the client side, these nodes are integral to how content is displayed and managed in the editor, influencing how they are rendered, behave, and saved in the database.\"]\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Example:\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: _jsx(_components.strong, {\n        children: \"myFeature/feature.client.ts:\"\n      })\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"'use client'\\n\\nimport { createClientFeature } from '@payloadcms/richtext-lexical/client'\\nimport { MyNode } from './nodes/MyNode'\\n\\nexport const MyClientFeature = createClientFeature({\\n  nodes: [MyNode],\\n})\\n\"\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"This also supports \", _jsx(_components.a, {\n        href: \"https://lexical.dev/docs/concepts/node-replacement\",\n        children: \"lexical node replacements\"\n      }), \".\"]\n    }), \"\\n\", _jsx(_components.p, {\n      children: _jsx(_components.strong, {\n        children: \"myFeature/nodes/MyNode.tsx:\"\n      })\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Here is a basic DecoratorNode example:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import type {\\n  DOMConversionMap,\\n  DOMConversionOutput,\\n  DOMExportOutput,\\n  EditorConfig,\\n  LexicalNode,\\n  SerializedLexicalNode,\\n} from '@payloadcms/richtext-lexical/lexical'\\n\\nimport { $applyNodeReplacement, DecoratorNode } from '@payloadcms/richtext-lexical/lexical'\\n\\n// SerializedLexicalNode is the default lexical node.\\n// By setting your SerializedMyNode type to SerializedLexicalNode,\\n// you are basically saying that this node does not save any additional data.\\n// If you want your node to save data, feel free to extend it\\nexport type SerializedMyNode = SerializedLexicalNode\\n\\n// Lazy-import the React component to your node here\\nconst MyNodeComponent = React.lazy(() =\u003e\\n  import('../component/index.js').then((module) =\u003e ({\\n    default: module.MyNodeComponent,\\n  })),\\n)\\n\\n/**\\n * This node is a DecoratorNode. DecoratorNodes allow you to render React components in the editor.\\n *\\n * They need both createDom and decorate functions. createDom =\u003e outside of the html. decorate =\u003e React Component inside of the html.\\n *\\n * If we used DecoratorBlockNode instead, we would only need a decorate method\\n */\\nexport class MyNode extends DecoratorNode\u003cReact.ReactElement\u003e {\\n  static clone(node: MyNode): MyNode {\\n    return new MyNode(node.__key)\\n  }\\n\\n  static getType(): string {\\n    return 'myNode'\\n  }\\n\\n  /**\\n   * Defines what happens if you copy a div element from another page and paste it into the lexical editor\\n   *\\n   * This also determines the behavior of lexical's internal HTML -\u003e Lexical converter\\n   */\\n  static importDOM(): DOMConversionMap | null {\\n    return {\\n      div: () =\u003e ({\\n        conversion: $yourConversionMethod,\\n        priority: 0,\\n      }),\\n    }\\n  }\\n\\n  /**\\n   * The data for this node is stored serialized as JSON. This is the \\\"load function\\\" of that node: it takes the saved data and converts it into a node.\\n   */\\n  static importJSON(serializedNode: SerializedMyNode): MyNode {\\n    return $createMyNode()\\n  }\\n\\n  /**\\n   * Determines how the hr element is rendered in the lexical editor. This is only the \\\"initial\\\" / \\\"outer\\\" HTML element.\\n   */\\n  createDOM(config: EditorConfig): HTMLElement {\\n    const element = document.createElement('div')\\n    return element\\n  }\\n\\n  /**\\n   * Allows you to render a React component within whatever createDOM returns.\\n   */\\n  decorate(): React.ReactElement {\\n    return \u003cMyNodeComponent nodeKey={this.__key} /\u003e\\n  }\\n\\n  /**\\n   * Opposite of importDOM, this function defines what happens when you copy a div element from the lexical editor and paste it into another page.\\n   *\\n   * This also determines the behavior of lexical's internal Lexical -\u003e HTML converter\\n   */\\n  exportDOM(): DOMExportOutput {\\n    return { element: document.createElement('div') }\\n  }\\n  /**\\n   * Opposite of importJSON. This determines what data is saved in the database / in the lexical editor state.\\n   */\\n  exportJSON(): SerializedLexicalNode {\\n    return {\\n      type: 'myNode',\\n      version: 1,\\n    }\\n  }\\n\\n  getTextContent(): string {\\n    return '\\\\n'\\n  }\\n\\n  isInline(): false {\\n    return false\\n  }\\n\\n  updateDOM(): boolean {\\n    return false\\n  }\\n}\\n\\n// This is used in the importDOM method. Totally optional if you do not want your node to be created automatically when copy \u0026 pasting certain dom elements\\n// into your editor.\\nfunction $yourConversionMethod(): DOMConversionOutput {\\n  return { node: $createMyNode() }\\n}\\n\\n// This is a utility method to create a new MyNode. Utility methods prefixed with $ make it explicit that this should only be used within lexical\\nexport function $createMyNode(): MyNode {\\n  return $applyNodeReplacement(new MyNode())\\n}\\n\\n// This is just a utility method you can use to check if a node is a MyNode. This also ensures correct typing.\\nexport function $isMyNode(\\n  node: LexicalNode | null | undefined,\\n): node is MyNode {\\n  return node instanceof MyNode\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Please do not add any 'use client' directives to your nodes, as the node class can be used on the server.\"\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Plugins\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"One small part of a feature are plugins. The name stems from the lexical playground plugins and is just a small part of a lexical feature.\\nPlugins are simply React components which are added to the editor, within all the lexical context providers. They can be used to add any functionality\\nto the editor, by utilizing the lexical API.\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Most commonly, they are used to register \", _jsx(_components.a, {\n        href: \"https://lexical.dev/docs/concepts/listeners\",\n        children: \"lexical listeners\"\n      }), \", \", _jsx(_components.a, {\n        href: \"https://lexical.dev/docs/concepts/transforms\",\n        children: \"node transforms\"\n      }), \" or \", _jsx(_components.a, {\n        href: \"https://lexical.dev/docs/concepts/commands\",\n        children: \"commands\"\n      }), \".\\nFor example, you could add a drawer to your plugin and register a command which opens it. That command can then be called from anywhere within lexical, e.g. from within your custom lexical node.\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"To add a plugin, simply add it to the \", _jsx(_components.code, {\n        children: \"plugins\"\n      }), \" array in your client feature:\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"'use client'\\n\\nimport { createClientFeature } from '@payloadcms/richtext-lexical/client'\\nimport { MyPlugin } from './plugin'\\n\\nexport const MyClientFeature = createClientFeature({\\n  plugins: [MyPlugin],\\n})\\n\"\n      })\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Example plugin.tsx:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"'use client'\\nimport type { LexicalCommand } from '@payloadcms/richtext-lexical/lexical'\\n\\nimport {\\n  createCommand,\\n  $getSelection,\\n  $isRangeSelection,\\n  COMMAND_PRIORITY_EDITOR,\\n} from '@payloadcms/richtext-lexical/lexical'\\n\\nimport { useLexicalComposerContext } from '@payloadcms/richtext-lexical/lexical/react/LexicalComposerContext'\\nimport { $insertNodeToNearestRoot } from '@payloadcms/richtext-lexical/lexical/utils'\\nimport { useEffect } from 'react'\\n\\nimport type { PluginComponent } from '@payloadcms/richtext-lexical' // type imports can be imported from @payloadcms/richtext-lexical - even on the client\\n\\nimport { $createMyNode } from '../nodes/MyNode'\\nimport './index.scss'\\n\\nexport const INSERT_MYNODE_COMMAND: LexicalCommand\u003cvoid\u003e = createCommand(\\n  'INSERT_MYNODE_COMMAND',\\n)\\n\\n/**\\n * Plugin which registers a lexical command to insert a new MyNode into the editor\\n */\\nexport const MyNodePlugin: PluginComponent = () =\u003e {\\n  // The useLexicalComposerContext hook can be used to access the lexical editor instance\\n  const [editor] = useLexicalComposerContext()\\n\\n  useEffect(() =\u003e {\\n    return editor.registerCommand(\\n      INSERT_MYNODE_COMMAND,\\n      (type) =\u003e {\\n        const selection = $getSelection()\\n\\n        if (!$isRangeSelection(selection)) {\\n          return false\\n        }\\n\\n        const focusNode = selection.focus.getNode()\\n\\n        if (focusNode !== null) {\\n          const newMyNode = $createMyNode()\\n          $insertNodeToNearestRoot(newMyNode)\\n        }\\n\\n        return true\\n      },\\n      COMMAND_PRIORITY_EDITOR,\\n    )\\n  }, [editor])\\n\\n  return null\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"In this example, we register a lexical command, which simply inserts a new MyNode into the editor. This command can be called from anywhere within lexical, e.g. from within a custom node.\"\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Toolbar groups\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Toolbar groups are visual containers which hold toolbar items. There are different toolbar group types which determine \", _jsx(_components.em, {\n        children: \"how\"\n      }), \" a toolbar item is displayed: \", _jsx(_components.code, {\n        children: \"dropdown\"\n      }), \" and \", _jsx(_components.code, {\n        children: \"buttons\"\n      }), \".\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"All the default toolbar groups are exported from \", _jsx(_components.code, {\n        children: \"@payloadcms/richtext-lexical/client\"\n      }), \". You can use them to add your own toolbar items to the editor:\"]\n    }), \"\\n\", _jsxs(_components.ul, {\n      children: [\"\\n\", _jsxs(_components.li, {\n        children: [\"Dropdown: \", _jsx(_components.code, {\n          children: \"toolbarAddDropdownGroupWithItems\"\n        })]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"Dropdown: \", _jsx(_components.code, {\n          children: \"toolbarTextDropdownGroupWithItems\"\n        })]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"Buttons: \", _jsx(_components.code, {\n          children: \"toolbarFormatGroupWithItems\"\n        })]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"Buttons: \", _jsx(_components.code, {\n          children: \"toolbarFeatureButtonsGroupWithItems\"\n        })]\n      }), \"\\n\"]\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Within dropdown groups, items are positioned vertically when the dropdown is opened and include the icon \u0026 label. Within button groups, items are positioned horizontally and only include the icon. If a toolbar group with the same key is declared twice, all its items will be merged into one group.\"\n    }), \"\\n\", _jsx(_components.h4, {\n      children: \"Custom buttons toolbar group\"\n    }), \"\\n\", _jsxs(_components.table, {\n      children: [_jsx(_components.thead, {\n        children: _jsxs(_components.tr, {\n          children: [_jsx(_components.th, {\n            children: \"Option\"\n          }), _jsx(_components.th, {\n            children: \"Description\"\n          })]\n        })\n      }), _jsxs(_components.tbody, {\n        children: [_jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"items\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"All toolbar items part of this toolbar group need to be added here.\"\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"key\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"Each toolbar group needs to have a unique key. Groups with the same keys will have their items merged together.\"\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"order\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"Determines where the toolbar group will be.\"\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"type\"\n              })\n            })\n          }), _jsxs(_components.td, {\n            children: [\"Controls the toolbar group type. Set to \", _jsx(_components.code, {\n              children: \"buttons\"\n            }), \" to create a buttons toolbar group, which displays toolbar items horizontally using only their icons.\"]\n          })]\n        })]\n      })]\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Example:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import type {\\n  ToolbarGroup,\\n  ToolbarGroupItem,\\n} from '@payloadcms/richtext-lexical'\\n\\nexport const toolbarFormatGroupWithItems = (\\n  items: ToolbarGroupItem[],\\n): ToolbarGroup =\u003e {\\n  return {\\n    type: 'buttons',\\n    items,\\n    key: 'myButtonsToolbar',\\n    order: 10,\\n  }\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(_components.h4, {\n      children: \"Custom dropdown toolbar group\"\n    }), \"\\n\", _jsxs(_components.table, {\n      children: [_jsx(_components.thead, {\n        children: _jsxs(_components.tr, {\n          children: [_jsx(_components.th, {\n            children: \"Option\"\n          }), _jsx(_components.th, {\n            children: \"Description\"\n          })]\n        })\n      }), _jsxs(_components.tbody, {\n        children: [_jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"items\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"All toolbar items part of this toolbar group need to be added here.\"\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"key\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"Each toolbar group needs to have a unique key. Groups with the same keys will have their items merged together.\"\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"order\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"Determines where the toolbar group will be.\"\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"type\"\n              })\n            })\n          }), _jsxs(_components.td, {\n            children: [\"Controls the toolbar group type. Set to \", _jsx(_components.code, {\n              children: \"dropdown\"\n            }), \" to create a buttons toolbar group, which displays toolbar items vertically using their icons and labels, if the dropdown is open.\"]\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"ChildComponent\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"The dropdown toolbar ChildComponent allows you to pass in a React Component which will be displayed within the dropdown button.\"\n          })]\n        })]\n      })]\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Example:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import type {\\n  ToolbarGroup,\\n  ToolbarGroupItem,\\n} from '@payloadcms/richtext-lexical'\\n\\nimport { MyIcon } from './icons/MyIcon'\\n\\nexport const toolbarAddDropdownGroupWithItems = (\\n  items: ToolbarGroupItem[],\\n): ToolbarGroup =\u003e {\\n  return {\\n    type: 'dropdown',\\n    ChildComponent: MyIcon,\\n    items,\\n    key: 'myDropdownToolbar',\\n    order: 10,\\n  }\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Toolbar items\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Custom nodes and features on its own are pointless, if they can't be added to the editor. You will need to hook in one of our interfaces which allow the user to interact with the editor:\"\n    }), \"\\n\", _jsxs(_components.ul, {\n      children: [\"\\n\", _jsx(_components.li, {\n        children: \"Fixed toolbar which stays fixed at the top of the editor\"\n      }), \"\\n\", _jsx(_components.li, {\n        children: \"Inline, floating toolbar which appears when selecting text\"\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"Slash menu which appears when typing \", _jsx(_components.code, {\n          children: \"/\"\n        }), \" in the editor\"]\n      }), \"\\n\", _jsx(_components.li, {\n        children: \"Markdown transformers, which are triggered when a certain text pattern is typed in the editor\"\n      }), \"\\n\", _jsx(_components.li, {\n        children: \"Or any other interfaces which can be added via your own plugins. Our toolbars are a prime example of this - they are just plugins.\"\n      }), \"\\n\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"To add a toolbar item to either the floating or the inline toolbar, you can add a ToolbarGroup with a ToolbarItem to the \", _jsx(_components.code, {\n        children: \"toolbarFixed\"\n      }), \" or \", _jsx(_components.code, {\n        children: \"toolbarInline\"\n      }), \" props of your client feature:\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"'use client'\\n\\nimport {\\n  createClientFeature,\\n  toolbarAddDropdownGroupWithItems,\\n} from '@payloadcms/richtext-lexical/client'\\nimport { IconComponent } from './icon'\\nimport { $isHorizontalRuleNode } from './nodes/MyNode'\\nimport { INSERT_MYNODE_COMMAND } from './plugin'\\nimport { $isNodeSelection } from '@payloadcms/richtext-lexical/lexical'\\n\\nexport const MyClientFeature = createClientFeature({\\n  toolbarFixed: {\\n    groups: [\\n      toolbarAddDropdownGroupWithItems([\\n        {\\n          ChildComponent: IconComponent,\\n          isActive: ({ selection }) =\u003e {\\n            if (!$isNodeSelection(selection) || !selection.getNodes().length) {\\n              return false\\n            }\\n\\n            const firstNode = selection.getNodes()[0]\\n            return $isHorizontalRuleNode(firstNode)\\n          },\\n          key: 'myNode',\\n          label: ({ i18n }) =\u003e {\\n            return i18n.t('lexical:myFeature:label')\\n          },\\n          onSelect: ({ editor }) =\u003e {\\n            editor.dispatchCommand(INSERT_MYNODE_COMMAND, undefined)\\n          },\\n        },\\n      ]),\\n    ],\\n  },\\n})\\n\"\n      })\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"You will have to provide a toolbar group first, and then the items for that toolbar group (more on that above).\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"A \", _jsx(_components.code, {\n        children: \"ToolbarItem\"\n      }), \" various props you can use to customize its behavior:\"]\n    }), \"\\n\", _jsxs(_components.table, {\n      children: [_jsx(_components.thead, {\n        children: _jsxs(_components.tr, {\n          children: [_jsx(_components.th, {\n            children: \"Option\"\n          }), _jsx(_components.th, {\n            children: \"Description\"\n          })]\n        })\n      }), _jsxs(_components.tbody, {\n        children: [_jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"ChildComponent\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"A React component which is rendered within your toolbar item's default button component. Usually, you want this to be an icon.\"\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"Component\"\n              })\n            })\n          }), _jsxs(_components.td, {\n            children: [\"A React component which is rendered in place of the toolbar item's default button component, thus completely replacing it. The \", _jsx(_components.code, {\n              children: \"ChildComponent\"\n            }), \" and \", _jsx(_components.code, {\n              children: \"onSelect\"\n            }), \" properties will be ignored.\"]\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"label\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"The label will be displayed in your toolbar item, if it's within a dropdown group. To make use of i18n, this can be a function.\"\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"key\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"Each toolbar item needs to have a unique key.\"\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"onSelect\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"A function which is called when the toolbar item is clicked.\"\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"isEnabled\"\n              })\n            })\n          }), _jsxs(_components.td, {\n            children: [\"This is optional and controls if the toolbar item is clickable or not. If \", _jsx(_components.code, {\n              children: \"false\"\n            }), \" is returned here, it will be grayed out and unclickable.\"]\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"isActive\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"This is optional and controls if the toolbar item is highlighted or not\"\n          })]\n        })]\n      })]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"The API for adding an item to the floating inline toolbar (\", _jsx(_components.code, {\n        children: \"toolbarInline\"\n      }), \") is identical. If you wanted to add an item to both the fixed and inline toolbar, you can extract it into its own variable\\n(typed as \", _jsx(_components.code, {\n        children: \"ToolbarGroup[]\"\n      }), \") and add it to both the \", _jsx(_components.code, {\n        children: \"toolbarFixed\"\n      }), \" and \", _jsx(_components.code, {\n        children: \"toolbarInline\"\n      }), \" props.\"]\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Slash Menu groups\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"We're exporting \", _jsx(_components.code, {\n        children: \"slashMenuBasicGroupWithItems\"\n      }), \" from \", _jsx(_components.code, {\n        children: \"@payloadcms/richtext-lexical/client\"\n      }), \" which you can use to add items to the slash menu labelled \\\"Basic\\\". If you want to create your own slash menu group, here is an example:\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import type {\\n  SlashMenuGroup,\\n  SlashMenuItem,\\n} from '@payloadcms/richtext-lexical'\\n\\nexport function mwnSlashMenuGroupWithItems(\\n  items: SlashMenuItem[],\\n): SlashMenuGroup {\\n  return {\\n    items,\\n    key: 'myGroup',\\n    label: 'My Group', // \u003c= This can be a function to make use of i18n\\n  }\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"By creating a helper function like this, you can easily re-use it and add items to it. All Slash Menu groups with the same keys will have their items merged together.\"\n    }), \"\\n\", _jsxs(_components.table, {\n      children: [_jsx(_components.thead, {\n        children: _jsxs(_components.tr, {\n          children: [_jsx(_components.th, {\n            children: \"Option\"\n          }), _jsx(_components.th, {\n            children: \"Description\"\n          })]\n        })\n      }), _jsxs(_components.tbody, {\n        children: [_jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"items\"\n              })\n            })\n          }), _jsxs(_components.td, {\n            children: [\"An array of \", _jsx(_components.code, {\n              children: \"SlashMenuItem\"\n            }), \"'s which will be displayed in the slash menu.\"]\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"label\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"The label will be displayed before your Slash Menu group. In order to make use of i18n, this can be a function.\"\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"key\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"Used for class names and, if label is not provided, for display. Slash menus with the same key will have their items merged together.\"\n          })]\n        })]\n      })]\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Slash Menu items\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"The API for adding items to the slash menu is similar. There are slash menu groups, and each slash menu groups has items. Here is an example:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"'use client'\\n\\nimport {\\n  createClientFeature,\\n  slashMenuBasicGroupWithItems,\\n} from '@payloadcms/richtext-lexical/client'\\nimport { INSERT_MYNODE_COMMAND } from './plugin'\\nimport { IconComponent } from './icon'\\n\\nexport const MyClientFeature = createClientFeature({\\n  slashMenu: {\\n    groups: [\\n      slashMenuBasicGroupWithItems([\\n        {\\n          Icon: IconComponent,\\n          key: 'myNode',\\n          keywords: ['myNode', 'myFeature', 'someOtherKeyword'],\\n          label: ({ i18n }) =\u003e {\\n            return i18n.t('lexical:myFeature:label')\\n          },\\n          onSelect: ({ editor }) =\u003e {\\n            editor.dispatchCommand(INSERT_MYNODE_COMMAND, undefined)\\n          },\\n        },\\n      ]),\\n    ],\\n  },\\n})\\n\"\n      })\n    }), \"\\n\", _jsxs(_components.table, {\n      children: [_jsx(_components.thead, {\n        children: _jsxs(_components.tr, {\n          children: [_jsx(_components.th, {\n            children: \"Option\"\n          }), _jsx(_components.th, {\n            children: \"Description\"\n          })]\n        })\n      }), _jsxs(_components.tbody, {\n        children: [_jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"Icon\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"The icon which is rendered in your slash menu item.\"\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"label\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"The label will be displayed in your slash menu item. In order to make use of i18n, this can be a function.\"\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"key\"\n              })\n            })\n          }), _jsxs(_components.td, {\n            children: [\"Each slash menu item needs to have a unique key. The key will be matched when typing, displayed if no \", _jsx(_components.code, {\n              children: \"label\"\n            }), \" property is set, and used for classNames.\"]\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"onSelect\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"A function which is called when the slash menu item is selected.\"\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"keywords\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"Keywords are used to match the item for different texts typed after the '/'. E.g. you might want to show a horizontal rule item if you type both /hr, /separator, /horizontal etc. In addition to the keywords, the label and key will be used to find the right slash menu item.\"\n          })]\n        })]\n      })]\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Markdown Transformers#client-feature-markdown-transformers\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"The Client Feature, just like the Server Feature, allows you to add markdown transformers. Markdown transformers on the client are used to create new nodes when a certain markdown pattern is typed in the editor.\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import { createClientFeature } from '@payloadcms/richtext-lexical/client'\\nimport type { ElementTransformer } from '@payloadcms/richtext-lexical/lexical/markdown'\\nimport { $createMyNode, $isMyNode, MyNode } from './nodes/MyNode'\\n\\nconst MyMarkdownTransformer: ElementTransformer = {\\n  type: 'element',\\n  dependencies: [MyNode],\\n  export: (node, exportChildren) =\u003e {\\n    if (!$isMyNode(node)) {\\n      return null\\n    }\\n    return '+++'\\n  },\\n  // match ---\\n  regExp: /^+++\\\\s*$/,\\n  replace: (parentNode) =\u003e {\\n    const node = $createMyNode()\\n    if (node) {\\n      parentNode.replace(node)\\n    }\\n  },\\n}\\n\\nexport const MyFeature = createClientFeature({\\n  markdownTransformers: [MyMarkdownTransformer],\\n})\\n\"\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"In this example, a new \", _jsx(_components.code, {\n        children: \"MyNode\"\n      }), \" will be inserted into the editor when \", _jsx(_components.code, {\n        children: \"+++ \"\n      }), \" is typed.\"]\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Providers\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"You can add providers to your client feature, which will be nested below the \", _jsx(_components.code, {\n        children: \"EditorConfigProvider\"\n      }), \". This can be useful if you want to provide some context to your nodes or other parts of your feature.\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"'use client'\\n\\nimport { createClientFeature } from '@payloadcms/richtext-lexical/client'\\nimport { TableContext } from './context'\\n\\nexport const MyClientFeature = createClientFeature({\\n  providers: [TableContext],\\n})\\n\"\n      })\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"Props\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"To accept props in your feature, type them as a generic.\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Server Feature:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"createServerFeature\u003cUnSanitizedProps, SanitizedProps, UnSanitizedClientProps\u003e({\\n  //...\\n})\\n\"\n      })\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Client Feature:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"createClientFeature\u003cUnSanitizedClientProps, SanitizedClientProps\u003e({\\n  //...\\n})\\n\"\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"The unSanitized props are what the user will pass to the feature when they call its provider function and add it to their editor config. You then have an option to sanitize those props.\\nTo sanitize those in the server feature, you can pass a function to \", _jsx(_components.code, {\n        children: \"feature\"\n      }), \" instead of an object:\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"createServerFeature\u003cUnSanitizedProps, SanitizedProps, UnSanitizedClientProps\u003e({\\n  //...\\n  feature: async ({\\n    config,\\n    isRoot,\\n    props,\\n    resolvedFeatures,\\n    unSanitizedEditorConfig,\\n    featureProviderMap,\\n  }) =\u003e {\\n    const sanitizedProps = doSomethingWithProps(props)\\n\\n    return {\\n      sanitizedServerFeatureProps: sanitizedProps,\\n      //Actual server feature here...\\n    }\\n  },\\n})\\n\"\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Keep in mind that any sanitized props then have to be returned in the \", _jsx(_components.code, {\n        children: \"sanitizedServerFeatureProps\"\n      }), \" property.\"]\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"In the client feature, it works similarly:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"createClientFeature\u003cUnSanitizedClientProps, SanitizedClientProps\u003e(\\n  ({\\n    clientFunctions,\\n    featureProviderMap,\\n    props,\\n    resolvedFeatures,\\n    unSanitizedEditorConfig,\\n  }) =\u003e {\\n    const sanitizedProps = doSomethingWithProps(props)\\n    return {\\n      sanitizedClientFeatureProps: sanitizedProps,\\n      //Actual client feature here...\\n    }\\n  },\\n)\\n\"\n      })\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Bringing props from the server to the client\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"By default, the client feature will never receive any props from the server feature. In order to pass props from the server to the client, you can need to return those props in the server feature:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"type UnSanitizedClientProps = {\\n  test: string\\n}\\n\\ncreateServerFeature\u003cUnSanitizedProps, SanitizedProps, UnSanitizedClientProps\u003e({\\n  //...\\n  feature: {\\n    clientFeatureProps: {\\n      test: 'myValue',\\n    },\\n  },\\n})\\n\"\n      })\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"The reason the client feature does not have the same props available as the server by default is because all client props need to be serializable. You can totally accept things like functions or Maps as props in your server feature, but you will not be able to send those to the client. In the end, those props are sent from the server to the client over the network, so they need to be serializable.\"\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"More information\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Have a look at the \", _jsx(_components.a, {\n        href: \"https://github.com/payloadcms/payload/tree/main/packages/richtext-lexical/src/features\",\n        children: \"features we've already built\"\n      }), \" - understanding how they work will help you understand how to create your own. There is no difference between the features included by default and the ones you create yourself - since those features are all isolated from the \\\"core\\\", you have access to the same APIs, whether the feature is part of Payload or not!\"]\n    })]\n  });\n}\nfunction MDXContent(props = {}) {\n  const {wrapper: MDXLayout} = Object.assign({}, _provideComponents(), props.components);\n  return MDXLayout ? _jsx(MDXLayout, Object.assign({}, props, {\n    children: _jsx(_createMdxContent, props)\n  })) : _createMdxContent(props);\n}\nreturn {\n  default: MDXContent\n};\nfunction _missingMdxReference(id, component) {\n  throw new Error(\"Expected \" + (component ? \"component\" : \"object\") + \" `\" + id + \"` to be defined: you likely forgot to import, pass, or provide it.\");\n}\n","frontmatter":{},"scope":{}}},"__N_SSG":true},"page":"/docs/[...slug]","query":{"slug":["rich-text","custom-features"]},"buildId":"rEpVRygLyV6yJ0i_Ohw0C","isFallback":false,"gsp":true,"scriptLoader":[]}</script></body></html>

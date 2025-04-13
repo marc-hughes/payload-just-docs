@@ -1,0 +1,112 @@
+<!DOCTYPE html><html><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width"/><meta name="next-head-count" content="2"/><link rel="preload" href="/_next/static/css/adeeaed65336a824.css" as="style" crossorigin=""/><link rel="stylesheet" href="/_next/static/css/adeeaed65336a824.css" crossorigin="" data-n-g=""/><noscript data-n-css=""></noscript><script defer="" crossorigin="" nomodule="" src="/_next/static/chunks/polyfills-c67a75d1b6f99dc8.js"></script><script src="/_next/static/chunks/webpack-fd8027ecb5121007.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/framework-fae63b21a27d6472.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/main-04104d75f6814829.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/pages/_app-2747846ed27f1501.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/pages/docs/%5B...slug%5D-e023289636109d90.js" defer="" crossorigin=""></script><script src="/_next/static/rEpVRygLyV6yJ0i_Ohw0C/_buildManifest.js" defer="" crossorigin=""></script><script src="/_next/static/rEpVRygLyV6yJ0i_Ohw0C/_ssgManifest.js" defer="" crossorigin=""></script></head><body><div id="__next"><div class="container mx-auto px-4 py-8 max-w-4xl"><h1 class="text-4xl font-bold mb-4">Lexical Migration</h1><p class="text-xl text-gray-600 mb-8">Migration from slate and payload-plugin-lexical to lexical</p><div class="prose prose-lg max-w-none"><h2>Migrating from Slate</h2>
+<p>While both Slate and Lexical save the editor state in JSON, the structure of the JSON is different.</p>
+<h3>Migration via Migration Script (Recommended)</h3>
+<p>Just import the <code>migrateSlateToLexical</code> function we provide, pass it the <code>payload</code> object and run it. Depending on the amount of collections, this might take a while.</p>
+<p>IMPORTANT: This will overwrite all slate data. We recommend doing the following first:</p>
+<ol>
+<li>Take a backup of your entire database. If anything goes wrong and you do not have a backup, you are on your own and will not receive any support.</li>
+<li>Make every richText field a lexical editor. This script will only convert lexical richText fields with old Slate data.</li>
+<li>Add the SlateToLexicalFeature (as seen below) first, and test it out by loading up the Admin Panel, to see if the migrator works as expected. You might have to build some custom converters for some fields first in order to convert custom Slate nodes. The SlateToLexicalFeature is where the converters are stored. Only fields with this feature added will be migrated.</li>
+<li>If this works as expected, add the <code>disableHooks: true</code> prop everywhere you&#x27;re initializing <code>SlateToLexicalFeature</code>. Example: <code>SlateToLexicalFeature({ disableHooks: true })</code>. Once you did that, you&#x27;re ready to run the migration script.</li>
+</ol>
+<pre><code class="language-ts">import { migrateSlateToLexical } from &#x27;@payloadcms/richtext-lexical/migrate&#x27;
+
+await migrateSlateToLexical({ payload })
+</code></pre>
+<h3>Migration via SlateToLexicalFeature</h3>
+<p>One way to handle this is to just give your lexical editor the ability to read the slate JSON.</p>
+<p>Simply add the <code>SlateToLexicalFeature</code> to your editor:</p>
+<pre><code class="language-ts">import type { CollectionConfig } from &#x27;payload&#x27;
+
+import { SlateToLexicalFeature } from &#x27;@payloadcms/richtext-lexical/migrate&#x27;
+import { lexicalEditor } from &#x27;@payloadcms/richtext-lexical&#x27;
+
+const Pages: CollectionConfig = {
+  slug: &#x27;pages&#x27;,
+  fields: [
+    {
+      name: &#x27;nameOfYourRichTextField&#x27;,
+      type: &#x27;richText&#x27;,
+      editor: lexicalEditor({
+        features: ({ defaultFeatures }) =&gt; [
+          ...defaultFeatures,
+          SlateToLexicalFeature({}),
+        ],
+      }),
+    },
+  ],
+}
+</code></pre>
+<p>and done! Now, every time this lexical editor is initialized, it converts the slate date to lexical on-the-fly. If the data is already in lexical format, it will just pass it through.</p>
+<p>This is by far the easiest way to migrate from Slate to Lexical, although it does come with a few caveats:</p>
+<ul>
+<li>There is a performance hit when initializing the lexical editor</li>
+<li>The editor will still output the Slate data in the output JSON, as the on-the-fly converter only runs for the Admin Panel</li>
+</ul>
+<p>The easy way to solve this: Edit the richText field and save the document! This overrides the slate data with the lexical data, and the next time the document is loaded, the lexical data will be used. This solves both the performance and the output issue for that specific document. This, however, is a slow and gradual migration process, thus you will have to support both API formats. Especially for a large number of documents, we recommend running the migration script, as explained above.</p>
+<h3>Converting custom Slate nodes</h3>
+<p>If you have custom Slate nodes, create a custom converter for them. Here&#x27;s the Upload converter as an example:</p>
+<pre><code class="language-ts">import type { SerializedUploadNode } from &#x27;../uploadNode&#x27;
+import type { SlateNodeConverter } from &#x27;@payloadcms/richtext-lexical&#x27;
+
+export const SlateUploadConverter: SlateNodeConverter = {
+  converter({ slateNode }) {
+    return {
+      fields: {
+        ...slateNode.fields,
+      },
+      format: &#x27;&#x27;,
+      relationTo: slateNode.relationTo,
+      type: &#x27;upload&#x27;,
+      value: {
+        id: slateNode.value?.id || &#x27;&#x27;,
+      },
+      version: 1,
+    } as const as SerializedUploadNode
+  },
+  nodeTypes: [&#x27;upload&#x27;],
+}
+</code></pre>
+<p>It&#x27;s pretty simple: You get a Slate node as input, and you return the lexical node. The <code>nodeTypes</code> array is used to determine which Slate nodes this converter can handle.</p>
+<p>When using a migration script, you can add your custom converters to the <code>converters</code> property of the <code>convertSlateToLexical</code> props, as seen in the example above.</p>
+<p>When using the <code>SlateToLexicalFeature</code>, you can add your custom converters to the <code>converters</code> property of the <code>SlateToLexicalFeature</code> props:</p>
+<pre><code class="language-ts">import type { CollectionConfig } from &#x27;payload&#x27;
+
+import { lexicalEditor } from &#x27;@payloadcms/richtext-lexical&#x27;
+import {
+  SlateToLexicalFeature,
+  defaultSlateConverters,
+} from &#x27;@payloadcms/richtext-lexical&#x27;
+
+import { YourCustomConverter } from &#x27;../converters/YourCustomConverter&#x27;
+
+const Pages: CollectionConfig = {
+  slug: &#x27;pages&#x27;,
+  fields: [
+    {
+      name: &#x27;nameOfYourRichTextField&#x27;,
+      type: &#x27;richText&#x27;,
+      editor: lexicalEditor({
+        features: ({ defaultFeatures }) =&gt; [
+          ...defaultFeatures,
+          SlateToLexicalFeature({
+            converters: [...defaultSlateConverters, YourCustomConverter],
+          }),
+        ],
+      }),
+    },
+  ],
+}
+</code></pre>
+<h2>Migrating from payload-plugin-lexical</h2>
+<p>Migrating from <a href="https://github.com/AlessioGr/payload-plugin-lexical">payload-plugin-lexical</a> works similar to migrating from Slate.</p>
+<p>Instead of a <code>SlateToLexicalFeature</code> there is a <code>LexicalPluginToLexicalFeature</code> you can use. And instead of <code>convertSlateToLexical</code> you can use <code>convertLexicalPluginToLexical</code>.</p>
+<h2>Migrating lexical data from old version to new version</h2>
+<p>Each lexical node has a <code>version</code> property which is saved in the database. Every time we make a breaking change to the node&#x27;s data, we increment the version. This way, we can detect an old version and automatically convert old data to the new format once you open up the editor.</p>
+<p>The problem is, this migration only happens when you open the editor, modify the richText field (so that the field&#x27;s <code>setValue</code> function is called) and save the document. Until you do that for all documents, some documents will still have the old data.</p>
+<p>To solve this, we export an <code>upgradeLexicalData</code> function which goes through every single document in your Payload app and re-saves it, if it has a lexical editor. This way, the data is automatically converted to the new format, and that automatic conversion gets applied to every single document in your app.</p>
+<p>IMPORTANT: Take a backup of your entire database. If anything goes wrong and you do not have a backup, you are on your own and will not receive any support.</p>
+<pre><code class="language-ts">import { upgradeLexicalData } from &#x27;@payloadcms/richtext-lexical&#x27;
+
+await upgradeLexicalData({ payload })
+</code></pre></div></div></div><script id="__NEXT_DATA__" type="application/json" crossorigin="">{"props":{"pageProps":{"frontMatter":{"title":"Lexical Migration","label":"Migration","order":90,"desc":"Migration from slate and payload-plugin-lexical to lexical","keywords":"lexical, rich text, editor, headless cms, migrate, migration"},"content":{"compiledSource":"/*@jsxRuntime automatic @jsxImportSource react*/\nconst {Fragment: _Fragment, jsx: _jsx, jsxs: _jsxs} = arguments[0];\nconst {useMDXComponents: _provideComponents} = arguments[0];\nfunction _createMdxContent(props) {\n  const _components = Object.assign({\n    h2: \"h2\",\n    p: \"p\",\n    h3: \"h3\",\n    code: \"code\",\n    ol: \"ol\",\n    li: \"li\",\n    pre: \"pre\",\n    ul: \"ul\",\n    a: \"a\"\n  }, _provideComponents(), props.components);\n  return _jsxs(_Fragment, {\n    children: [_jsx(_components.h2, {\n      children: \"Migrating from Slate\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"While both Slate and Lexical save the editor state in JSON, the structure of the JSON is different.\"\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Migration via Migration Script (Recommended)\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Just import the \", _jsx(_components.code, {\n        children: \"migrateSlateToLexical\"\n      }), \" function we provide, pass it the \", _jsx(_components.code, {\n        children: \"payload\"\n      }), \" object and run it. Depending on the amount of collections, this might take a while.\"]\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"IMPORTANT: This will overwrite all slate data. We recommend doing the following first:\"\n    }), \"\\n\", _jsxs(_components.ol, {\n      children: [\"\\n\", _jsx(_components.li, {\n        children: \"Take a backup of your entire database. If anything goes wrong and you do not have a backup, you are on your own and will not receive any support.\"\n      }), \"\\n\", _jsx(_components.li, {\n        children: \"Make every richText field a lexical editor. This script will only convert lexical richText fields with old Slate data.\"\n      }), \"\\n\", _jsx(_components.li, {\n        children: \"Add the SlateToLexicalFeature (as seen below) first, and test it out by loading up the Admin Panel, to see if the migrator works as expected. You might have to build some custom converters for some fields first in order to convert custom Slate nodes. The SlateToLexicalFeature is where the converters are stored. Only fields with this feature added will be migrated.\"\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"If this works as expected, add the \", _jsx(_components.code, {\n          children: \"disableHooks: true\"\n        }), \" prop everywhere you're initializing \", _jsx(_components.code, {\n          children: \"SlateToLexicalFeature\"\n        }), \". Example: \", _jsx(_components.code, {\n          children: \"SlateToLexicalFeature({ disableHooks: true })\"\n        }), \". Once you did that, you're ready to run the migration script.\"]\n      }), \"\\n\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import { migrateSlateToLexical } from '@payloadcms/richtext-lexical/migrate'\\n\\nawait migrateSlateToLexical({ payload })\\n\"\n      })\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Migration via SlateToLexicalFeature\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"One way to handle this is to just give your lexical editor the ability to read the slate JSON.\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Simply add the \", _jsx(_components.code, {\n        children: \"SlateToLexicalFeature\"\n      }), \" to your editor:\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import type { CollectionConfig } from 'payload'\\n\\nimport { SlateToLexicalFeature } from '@payloadcms/richtext-lexical/migrate'\\nimport { lexicalEditor } from '@payloadcms/richtext-lexical'\\n\\nconst Pages: CollectionConfig = {\\n  slug: 'pages',\\n  fields: [\\n    {\\n      name: 'nameOfYourRichTextField',\\n      type: 'richText',\\n      editor: lexicalEditor({\\n        features: ({ defaultFeatures }) =\u003e [\\n          ...defaultFeatures,\\n          SlateToLexicalFeature({}),\\n        ],\\n      }),\\n    },\\n  ],\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"and done! Now, every time this lexical editor is initialized, it converts the slate date to lexical on-the-fly. If the data is already in lexical format, it will just pass it through.\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"This is by far the easiest way to migrate from Slate to Lexical, although it does come with a few caveats:\"\n    }), \"\\n\", _jsxs(_components.ul, {\n      children: [\"\\n\", _jsx(_components.li, {\n        children: \"There is a performance hit when initializing the lexical editor\"\n      }), \"\\n\", _jsx(_components.li, {\n        children: \"The editor will still output the Slate data in the output JSON, as the on-the-fly converter only runs for the Admin Panel\"\n      }), \"\\n\"]\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"The easy way to solve this: Edit the richText field and save the document! This overrides the slate data with the lexical data, and the next time the document is loaded, the lexical data will be used. This solves both the performance and the output issue for that specific document. This, however, is a slow and gradual migration process, thus you will have to support both API formats. Especially for a large number of documents, we recommend running the migration script, as explained above.\"\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Converting custom Slate nodes\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"If you have custom Slate nodes, create a custom converter for them. Here's the Upload converter as an example:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import type { SerializedUploadNode } from '../uploadNode'\\nimport type { SlateNodeConverter } from '@payloadcms/richtext-lexical'\\n\\nexport const SlateUploadConverter: SlateNodeConverter = {\\n  converter({ slateNode }) {\\n    return {\\n      fields: {\\n        ...slateNode.fields,\\n      },\\n      format: '',\\n      relationTo: slateNode.relationTo,\\n      type: 'upload',\\n      value: {\\n        id: slateNode.value?.id || '',\\n      },\\n      version: 1,\\n    } as const as SerializedUploadNode\\n  },\\n  nodeTypes: ['upload'],\\n}\\n\"\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"It's pretty simple: You get a Slate node as input, and you return the lexical node. The \", _jsx(_components.code, {\n        children: \"nodeTypes\"\n      }), \" array is used to determine which Slate nodes this converter can handle.\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"When using a migration script, you can add your custom converters to the \", _jsx(_components.code, {\n        children: \"converters\"\n      }), \" property of the \", _jsx(_components.code, {\n        children: \"convertSlateToLexical\"\n      }), \" props, as seen in the example above.\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"When using the \", _jsx(_components.code, {\n        children: \"SlateToLexicalFeature\"\n      }), \", you can add your custom converters to the \", _jsx(_components.code, {\n        children: \"converters\"\n      }), \" property of the \", _jsx(_components.code, {\n        children: \"SlateToLexicalFeature\"\n      }), \" props:\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import type { CollectionConfig } from 'payload'\\n\\nimport { lexicalEditor } from '@payloadcms/richtext-lexical'\\nimport {\\n  SlateToLexicalFeature,\\n  defaultSlateConverters,\\n} from '@payloadcms/richtext-lexical'\\n\\nimport { YourCustomConverter } from '../converters/YourCustomConverter'\\n\\nconst Pages: CollectionConfig = {\\n  slug: 'pages',\\n  fields: [\\n    {\\n      name: 'nameOfYourRichTextField',\\n      type: 'richText',\\n      editor: lexicalEditor({\\n        features: ({ defaultFeatures }) =\u003e [\\n          ...defaultFeatures,\\n          SlateToLexicalFeature({\\n            converters: [...defaultSlateConverters, YourCustomConverter],\\n          }),\\n        ],\\n      }),\\n    },\\n  ],\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"Migrating from payload-plugin-lexical\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Migrating from \", _jsx(_components.a, {\n        href: \"https://github.com/AlessioGr/payload-plugin-lexical\",\n        children: \"payload-plugin-lexical\"\n      }), \" works similar to migrating from Slate.\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Instead of a \", _jsx(_components.code, {\n        children: \"SlateToLexicalFeature\"\n      }), \" there is a \", _jsx(_components.code, {\n        children: \"LexicalPluginToLexicalFeature\"\n      }), \" you can use. And instead of \", _jsx(_components.code, {\n        children: \"convertSlateToLexical\"\n      }), \" you can use \", _jsx(_components.code, {\n        children: \"convertLexicalPluginToLexical\"\n      }), \".\"]\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"Migrating lexical data from old version to new version\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Each lexical node has a \", _jsx(_components.code, {\n        children: \"version\"\n      }), \" property which is saved in the database. Every time we make a breaking change to the node's data, we increment the version. This way, we can detect an old version and automatically convert old data to the new format once you open up the editor.\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"The problem is, this migration only happens when you open the editor, modify the richText field (so that the field's \", _jsx(_components.code, {\n        children: \"setValue\"\n      }), \" function is called) and save the document. Until you do that for all documents, some documents will still have the old data.\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"To solve this, we export an \", _jsx(_components.code, {\n        children: \"upgradeLexicalData\"\n      }), \" function which goes through every single document in your Payload app and re-saves it, if it has a lexical editor. This way, the data is automatically converted to the new format, and that automatic conversion gets applied to every single document in your app.\"]\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"IMPORTANT: Take a backup of your entire database. If anything goes wrong and you do not have a backup, you are on your own and will not receive any support.\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import { upgradeLexicalData } from '@payloadcms/richtext-lexical'\\n\\nawait upgradeLexicalData({ payload })\\n\"\n      })\n    })]\n  });\n}\nfunction MDXContent(props = {}) {\n  const {wrapper: MDXLayout} = Object.assign({}, _provideComponents(), props.components);\n  return MDXLayout ? _jsx(MDXLayout, Object.assign({}, props, {\n    children: _jsx(_createMdxContent, props)\n  })) : _createMdxContent(props);\n}\nreturn {\n  default: MDXContent\n};\n","frontmatter":{},"scope":{}}},"__N_SSG":true},"page":"/docs/[...slug]","query":{"slug":["rich-text","migration"]},"buildId":"rEpVRygLyV6yJ0i_Ohw0C","isFallback":false,"gsp":true,"scriptLoader":[]}</script></body></html>

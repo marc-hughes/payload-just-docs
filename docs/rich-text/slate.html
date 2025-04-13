@@ -1,0 +1,279 @@
+<!DOCTYPE html><html><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width"/><meta name="next-head-count" content="2"/><link rel="preload" href="/_next/static/css/adeeaed65336a824.css" as="style" crossorigin=""/><link rel="stylesheet" href="/_next/static/css/adeeaed65336a824.css" crossorigin="" data-n-g=""/><noscript data-n-css=""></noscript><script defer="" crossorigin="" nomodule="" src="/_next/static/chunks/polyfills-c67a75d1b6f99dc8.js"></script><script src="/_next/static/chunks/webpack-fd8027ecb5121007.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/framework-fae63b21a27d6472.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/main-04104d75f6814829.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/pages/_app-2747846ed27f1501.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/pages/docs/%5B...slug%5D-e023289636109d90.js" defer="" crossorigin=""></script><script src="/_next/static/rEpVRygLyV6yJ0i_Ohw0C/_buildManifest.js" defer="" crossorigin=""></script><script src="/_next/static/rEpVRygLyV6yJ0i_Ohw0C/_ssgManifest.js" defer="" crossorigin=""></script></head><body><div id="__next"><div class="container mx-auto px-4 py-8 max-w-4xl"><h1 class="text-4xl font-bold mb-4">Slate Editor</h1><p class="text-xl text-gray-600 mb-8">The Slate editor has been supported by Payload since beta. It&#x27;s very powerful and stores content as JSON, which unlocks a ton of power.</p><div class="prose prose-lg max-w-none"><div class="p-4 my-4 rounded-lg border bg-yellow-50 border-yellow-200 text-yellow-800"><svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg><p>The <a href="/docs/rich-text/overview">default Payload editor</a> is currently based on Lexical. This documentation
+is about our old Slate-based editor. You can continue using it because it is still supported, or you can
+see the optional <a href="/docs/rich-text/migration">migration guide</a> to migrate from Slate to Lexical (recommended).</p></div>
+<p>To use the Slate editor, first you need to install it:</p>
+<pre><code>npm install --save @payloadcms/richtext-slate
+</code></pre>
+<p>After installation, you can pass it to your top-level Payload Config:</p>
+<pre><code class="language-ts">import { buildConfig } from &#x27;payload&#x27;
+import { slateEditor } from &#x27;@payloadcms/richtext-slate&#x27;
+
+export default buildConfig({
+  collections: [
+    // your collections here
+  ],
+  // Pass the Slate editor to the root config
+  editor: slateEditor({}),
+})
+</code></pre>
+<p>And here&#x27;s an example for how to install the Slate editor on a field-by-field basis, while customizing its options:</p>
+<pre><code class="language-ts">import type { CollectionConfig } from &#x27;payload&#x27;
+import { slateEditor } from &#x27;@payloadcms/richtext-slate&#x27;
+
+export const Pages: CollectionConfig = {
+  slug: &#x27;pages&#x27;,
+  fields: [
+    {
+      name: &#x27;content&#x27;,
+      type: &#x27;richText&#x27;,
+      // Pass the Slate editor here and configure it accordingly
+      editor: slateEditor({
+        admin: {
+          elements: [
+            // customize elements allowed in Slate editor here
+          ],
+          leaves: [
+            // customize leaves allowed in Slate editor here
+          ],
+        },
+      }),
+    },
+  ],
+}
+</code></pre>
+<h2>Admin Options</h2>
+<p><strong><code>elements</code></strong></p>
+<p>The <code>elements</code> property is used to specify which built-in or custom <a href="https://docs.slatejs.org/concepts/02-nodes#element">SlateJS elements</a> should be made available to the field within the Admin Panel.</p>
+<p>The default <code>elements</code> available in Payload are:</p>
+<ul>
+<li><code>h1</code></li>
+<li><code>h2</code></li>
+<li><code>h3</code></li>
+<li><code>h4</code></li>
+<li><code>h5</code></li>
+<li><code>h6</code></li>
+<li><code>blockquote</code></li>
+<li><code>link</code></li>
+<li><code>ol</code></li>
+<li><code>ul</code></li>
+<li><code>textAlign</code></li>
+<li><code>indent</code></li>
+<li><a href="#relationship-element"><code>relationship</code></a></li>
+<li><a href="#upload-element"><code>upload</code></a></li>
+<li><a href="#text-align"><code>textAlign</code></a></li>
+</ul>
+<p><strong><code>leaves</code></strong></p>
+<p>The <code>leaves</code> property specifies built-in or custom <a href="https://docs.slatejs.org/concepts/08-rendering#leaves">SlateJS leaves</a> to be enabled within the Admin Panel.</p>
+<p>The default <code>leaves</code> available in Payload are:</p>
+<ul>
+<li><code>bold</code></li>
+<li><code>code</code></li>
+<li><code>italic</code></li>
+<li><code>strikethrough</code></li>
+<li><code>underline</code></li>
+</ul>
+<p><strong><code>link.fields</code></strong></p>
+<p>This allows <a href="/docs/fields/overview">fields</a> to be saved as extra fields on a link inside the Rich Text Editor. When this is present, the fields will render inside a modal that can be opened by clicking the &quot;edit&quot; button on the link element.</p>
+<p><code>link.fields</code> may either be an array of fields (in which case all fields defined in it will be appended below the default fields) or a function that accepts the default fields as only argument and returns an array defining the entirety of fields to be used (thus providing a mechanism of overriding the default fields).</p>
+<p><img src="https://payloadcms.com/images/docs/fields/richText/rte-link-fields-modal.jpg" alt="RichText link fields"/>
+<em>RichText link with custom fields</em></p>
+<p><strong><code>upload.collections[collection-name].fields</code></strong></p>
+<p>This allows <a href="/docs/fields/overview">fields</a> to be saved as meta data on an upload field inside the Rich Text Editor. When this is present, the fields will render inside a modal that can be opened by clicking the &quot;edit&quot; button on the upload element.</p>
+<p><img src="https://payloadcms.com/images/docs/fields/richText/rte-upload-element.jpg" alt="RichText upload element"/>
+<em>RichText field using the upload element</em></p>
+<p><img src="https://payloadcms.com/images/docs/fields/richText/rte-upload-fields-modal.jpg" alt="RichText upload element modal"/>
+<em>RichText upload element modal displaying fields from the config</em></p>
+<h3>Relationship element</h3>
+<p>The built-in <code>relationship</code> element is a powerful way to reference other Documents directly within your Rich Text editor.</p>
+<h3>Upload element</h3>
+<p>Similar to the <code>relationship</code> element, the <code>upload</code> element is a user-friendly way to reference <a href="/docs/upload/overview">Upload-enabled collections</a> with a UI specifically designed for media / image-based uploads.</p>
+<div class="p-4 my-4 rounded-lg border bg-green-50 border-green-200 text-green-800"><svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg><p><strong>Tip:</strong></p><p>Collections are automatically allowed to be selected within the Rich Text relationship and upload
+elements by default. If you want to disable a collection from being able to be referenced in Rich
+Text fields, set the collection admin options of <strong>enableRichTextLink</strong> and
+<strong>enableRichTextRelationship</strong> to false.</p></div>
+<p>Relationship and Upload elements are populated dynamically into your Rich Text field&#x27; content. Within the REST and Local APIs, any present RichText <code>relationship</code> or <code>upload</code> elements will respect the <code>depth</code> option that you pass, and will be populated accordingly. In GraphQL, each <code>richText</code> field accepts an argument of <code>depth</code> for you to utilize.</p>
+<h3>TextAlign element</h3>
+<p>Text Alignment is not included by default and can be added to a Rich Text Editor by adding <code>textAlign</code> to the list of elements. TextAlign will alter the existing element to include a new <code>textAlign</code> field in the resulting JSON. This field can be used in combination with other elements and leaves to position content to the left, center or right.</p>
+<h3>Specifying which elements and leaves to allow</h3>
+<p>To specify which default elements or leaves should be allowed to be used for this field, define arrays that contain string names for each element or leaf you wish to enable. To specify a custom element or leaf, pass an object with all corresponding properties as outlined below. View the <a href="#example">example</a> to reference how this all works.</p>
+<h3>Building custom elements and leaves</h3>
+<p>You can design and build your own Slate elements and leaves to extend the editor with your own functionality. To do so, first start by reading the <a href="https://docs.slatejs.org/">SlateJS documentation</a> and looking at the <a href="https://www.slatejs.org/examples/richtext">Slate examples</a> to familiarize yourself with the SlateJS editor as a whole.</p>
+<p>Once you&#x27;re up to speed with the general concepts involved, you can pass in your own elements and leaves to your field&#x27;s admin config.</p>
+<p><strong>Both custom elements and leaves are defined via the following config:</strong></p>
+<div class="overflow-x-auto my-8"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr class="even:bg-gray-50"><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>name</code></strong> *</td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">The default name to be used as a <code>type</code> for this element.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>Button</code></strong> *</td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">A React component to be rendered in the Rich Text toolbar.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>plugins</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">An array of plugins to provide to the Rich Text editor.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>type</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">A type that overrides the default type used by <code>name</code></td></tr></tbody></table></div>
+<p>Custom <code>Element</code>s also require the <code>Element</code> property set to a React component to be rendered as the <code>Element</code> within the rich text editor itself.</p>
+<p>Custom <code>Leaf</code> objects follow a similar pattern but require you to define the <code>Leaf</code> property instead.</p>
+<p>Specifying custom <code>Type</code>s let you extend your custom elements by adding additional fields to your JSON object.</p>
+<h3>Example</h3>
+<p><code>collections/ExampleCollection.ts</code></p>
+<pre><code class="language-ts">import type { CollectionConfig } from &#x27;payload&#x27;
+
+import { slateEditor } from &#x27;@payloadcms/richtext-slate&#x27;
+
+export const ExampleCollection: CollectionConfig = {
+  slug: &#x27;example-collection&#x27;,
+  fields: [
+    {
+      name: &#x27;content&#x27;, // required
+      type: &#x27;richText&#x27;, // required
+      defaultValue: [
+        {
+          children: [{ text: &#x27;Here is some default content for this field&#x27; }],
+        },
+      ],
+      required: true,
+      editor: slateEditor({
+        admin: {
+          elements: [
+            &#x27;h2&#x27;,
+            &#x27;h3&#x27;,
+            &#x27;h4&#x27;,
+            &#x27;link&#x27;,
+            &#x27;blockquote&#x27;,
+            {
+              name: &#x27;cta&#x27;,
+              Button: CustomCallToActionButton,
+              Element: CustomCallToActionElement,
+              plugins: [
+                // any plugins that are required by this element go here
+              ],
+            },
+          ],
+          leaves: [
+            &#x27;bold&#x27;,
+            &#x27;italic&#x27;,
+            {
+              name: &#x27;highlight&#x27;,
+              Button: CustomHighlightButton,
+              Leaf: CustomHighlightLeaf,
+              plugins: [
+                // any plugins that are required by this leaf go here
+              ],
+            },
+          ],
+          link: {
+            // Inject your own fields into the Link element
+            fields: [
+              {
+                name: &#x27;rel&#x27;,
+                label: &#x27;Rel Attribute&#x27;,
+                type: &#x27;select&#x27;,
+                hasMany: true,
+                options: [&#x27;noopener&#x27;, &#x27;noreferrer&#x27;, &#x27;nofollow&#x27;],
+              },
+            ],
+          },
+          upload: {
+            collections: {
+              media: {
+                fields: [
+                  // any fields that you would like to save
+                  // on an upload element in the `media` collection
+                ],
+              },
+            },
+          },
+        },
+      }),
+    },
+  ],
+}
+</code></pre>
+<h3>Generating HTML</h3>
+<p>As the Rich Text field saves its content in a JSON format, you&#x27;ll need to render it as HTML yourself. Here is an example for how to generate JSX / HTML from Rich Text content:</p>
+<pre><code class="language-ts">import React, { Fragment } from &quot;react&quot;;
+import escapeHTML from &quot;escape-html&quot;;
+import { Text } from &quot;slate&quot;;
+
+const serialize = (children) =&gt;
+  children.map((node, i) =&gt; {
+    if (Text.isText(node)) {
+      let text = (
+        &lt;span dangerouslySetInnerHTML={{ __html: escapeHTML(node.text) }} /&gt;
+      );
+
+      if (node.bold) {
+        text = &lt;strong key={i}&gt;{text}&lt;/strong&gt;;
+      }
+
+      if (node.code) {
+        text = &lt;code key={i}&gt;{text}&lt;/code&gt;;
+      }
+
+      if (node.italic) {
+        text = &lt;em key={i}&gt;{text}&lt;/em&gt;;
+      }
+
+      // Handle other leaf types here...
+
+      return &lt;Fragment key={i}&gt;{text}&lt;/Fragment&gt;;
+    }
+
+    if (!node) {
+      return null;
+    }
+
+    switch (node.type) {
+      case &quot;h1&quot;:
+        return &lt;h1 key={i}&gt;{serialize(node.children)}&lt;/h1&gt;;
+      // Iterate through all headings here...
+      case &quot;h6&quot;:
+        return &lt;h6 key={i}&gt;{serialize(node.children)}&lt;/h6&gt;;
+      case &quot;blockquote&quot;:
+        return &lt;blockquote key={i}&gt;{serialize(node.children)}&lt;/blockquote&gt;;
+      case &quot;ul&quot;:
+        return &lt;ul key={i}&gt;{serialize(node.children)}&lt;/ul&gt;;
+      case &quot;ol&quot;:
+        return &lt;ol key={i}&gt;{serialize(node.children)}&lt;/ol&gt;;
+      case &quot;li&quot;:
+        return &lt;li key={i}&gt;{serialize(node.children)}&lt;/li&gt;;
+      case &quot;link&quot;:
+        return (
+          &lt;a href={escapeHTML(node.url)} key={i}&gt;
+            {serialize(node.children)}
+          &lt;/a&gt;
+        );
+
+      default:
+        return &lt;p key={i}&gt;{serialize(node.children)}&lt;/p&gt;;
+    }
+  });
+</code></pre>
+<div class="p-4 my-4 rounded-lg border bg-blue-50 border-blue-200 text-blue-800"><svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg><p><strong>Note:</strong></p><p>The above example is for how to render to JSX, although for plain HTML the pattern is similar.
+Just remove the JSX and return HTML strings instead!</p></div>
+<h3>Built-in SlateJS Plugins</h3>
+<p>Payload comes with a few built-in SlateJS plugins which can be extended to make developing your own elements and leaves a bit easier.</p>
+<h4><code>shouldBreakOutOnEnter</code></h4>
+<p>Payload&#x27;s built-in heading elements all allow a &quot;hard return&quot; to &quot;break out&quot; of the currently active element. For example, if you hit <code>enter</code> while typing an <code>h1</code>, the <code>h1</code> will be &quot;broken out of&quot; and you&#x27;ll be able to continue writing as the default paragraph element.</p>
+<p>If you want to utilize this functionality within your own custom elements, you can do so by adding a custom plugin to your <code>element</code> like the following &quot;large body&quot; element example:</p>
+<p><code>customLargeBodyElement.js</code>:</p>
+<pre><code class="language-ts">import Button from &#x27;./Button&#x27;
+import Element from &#x27;./Element&#x27;
+import withLargeBody from &#x27;./plugin&#x27;
+
+export default {
+  name: &#x27;large-body&#x27;,
+  Button,
+  Element,
+  plugins: [
+    (incomingEditor) =&gt; {
+      const editor = incomingEditor
+      const { shouldBreakOutOnEnter } = editor
+
+      editor.shouldBreakOutOnEnter = (element) =&gt;
+        element.type === &#x27;large-body&#x27; ? true : shouldBreakOutOnEnter(element)
+
+      return editor
+    },
+  ],
+}
+</code></pre>
+<p>Above, you can see that we are creating a custom SlateJS element with a name of <code>large-body</code>. This might render a slightly larger body copy on the frontend of your app(s). We pass it a name, button, and element—but additionally, we pass it a <code>plugins</code> array containing a single SlateJS plugin.</p>
+<p>The plugin itself extends Payload&#x27;s built-in <code>shouldBreakOutOnEnter</code> Slate function to add its own element name to the list of elements that should &quot;break out&quot; when the <code>enter</code> key is pressed.</p>
+<h3>TypeScript</h3>
+<p>If you are building your own custom Rich Text elements or leaves, you may benefit from importing the following types:</p>
+<pre><code class="language-ts">import type {
+  RichTextCustomElement,
+  RichTextCustomLeaf,
+} from &#x27;@payloadcms/richtext-slate&#x27;
+</code></pre></div></div></div><script id="__NEXT_DATA__" type="application/json" crossorigin="">{"props":{"pageProps":{"frontMatter":{"title":"Slate Editor","label":"Slate (legacy)","order":100,"desc":"The Slate editor has been supported by Payload since beta. It's very powerful and stores content as JSON, which unlocks a ton of power.","keywords":"slatejs, slate, rich text, editor, headless cms"},"content":{"compiledSource":"/*@jsxRuntime automatic @jsxImportSource react*/\nconst {Fragment: _Fragment, jsx: _jsx, jsxs: _jsxs} = arguments[0];\nconst {useMDXComponents: _provideComponents} = arguments[0];\nfunction _createMdxContent(props) {\n  const _components = Object.assign({\n    p: \"p\",\n    a: \"a\",\n    pre: \"pre\",\n    code: \"code\",\n    h2: \"h2\",\n    strong: \"strong\",\n    ul: \"ul\",\n    li: \"li\",\n    img: \"img\",\n    em: \"em\",\n    h3: \"h3\",\n    table: \"table\",\n    thead: \"thead\",\n    tr: \"tr\",\n    th: \"th\",\n    tbody: \"tbody\",\n    td: \"td\",\n    h4: \"h4\"\n  }, _provideComponents(), props.components), {Banner} = _components;\n  if (!Banner) _missingMdxReference(\"Banner\", true);\n  return _jsxs(_Fragment, {\n    children: [_jsx(Banner, {\n      type: \"warning\",\n      children: _jsxs(_components.p, {\n        children: [\"The \", _jsx(_components.a, {\n          href: \"/docs/rich-text/overview\",\n          children: \"default Payload editor\"\n        }), \" is currently based on Lexical. This documentation\\nis about our old Slate-based editor. You can continue using it because it is still supported, or you can\\nsee the optional \", _jsx(_components.a, {\n          href: \"/docs/rich-text/migration\",\n          children: \"migration guide\"\n        }), \" to migrate from Slate to Lexical (recommended).\"]\n      })\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"To use the Slate editor, first you need to install it:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        children: \"npm install --save @payloadcms/richtext-slate\\n\"\n      })\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"After installation, you can pass it to your top-level Payload Config:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import { buildConfig } from 'payload'\\nimport { slateEditor } from '@payloadcms/richtext-slate'\\n\\nexport default buildConfig({\\n  collections: [\\n    // your collections here\\n  ],\\n  // Pass the Slate editor to the root config\\n  editor: slateEditor({}),\\n})\\n\"\n      })\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"And here's an example for how to install the Slate editor on a field-by-field basis, while customizing its options:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import type { CollectionConfig } from 'payload'\\nimport { slateEditor } from '@payloadcms/richtext-slate'\\n\\nexport const Pages: CollectionConfig = {\\n  slug: 'pages',\\n  fields: [\\n    {\\n      name: 'content',\\n      type: 'richText',\\n      // Pass the Slate editor here and configure it accordingly\\n      editor: slateEditor({\\n        admin: {\\n          elements: [\\n            // customize elements allowed in Slate editor here\\n          ],\\n          leaves: [\\n            // customize leaves allowed in Slate editor here\\n          ],\\n        },\\n      }),\\n    },\\n  ],\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"Admin Options\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: _jsx(_components.strong, {\n        children: _jsx(_components.code, {\n          children: \"elements\"\n        })\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"The \", _jsx(_components.code, {\n        children: \"elements\"\n      }), \" property is used to specify which built-in or custom \", _jsx(_components.a, {\n        href: \"https://docs.slatejs.org/concepts/02-nodes#element\",\n        children: \"SlateJS elements\"\n      }), \" should be made available to the field within the Admin Panel.\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"The default \", _jsx(_components.code, {\n        children: \"elements\"\n      }), \" available in Payload are:\"]\n    }), \"\\n\", _jsxs(_components.ul, {\n      children: [\"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"h1\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"h2\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"h3\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"h4\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"h5\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"h6\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"blockquote\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"link\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"ol\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"ul\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"textAlign\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"indent\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.a, {\n          href: \"#relationship-element\",\n          children: _jsx(_components.code, {\n            children: \"relationship\"\n          })\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.a, {\n          href: \"#upload-element\",\n          children: _jsx(_components.code, {\n            children: \"upload\"\n          })\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.a, {\n          href: \"#text-align\",\n          children: _jsx(_components.code, {\n            children: \"textAlign\"\n          })\n        })\n      }), \"\\n\"]\n    }), \"\\n\", _jsx(_components.p, {\n      children: _jsx(_components.strong, {\n        children: _jsx(_components.code, {\n          children: \"leaves\"\n        })\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"The \", _jsx(_components.code, {\n        children: \"leaves\"\n      }), \" property specifies built-in or custom \", _jsx(_components.a, {\n        href: \"https://docs.slatejs.org/concepts/08-rendering#leaves\",\n        children: \"SlateJS leaves\"\n      }), \" to be enabled within the Admin Panel.\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"The default \", _jsx(_components.code, {\n        children: \"leaves\"\n      }), \" available in Payload are:\"]\n    }), \"\\n\", _jsxs(_components.ul, {\n      children: [\"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"bold\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"code\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"italic\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"strikethrough\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"underline\"\n        })\n      }), \"\\n\"]\n    }), \"\\n\", _jsx(_components.p, {\n      children: _jsx(_components.strong, {\n        children: _jsx(_components.code, {\n          children: \"link.fields\"\n        })\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"This allows \", _jsx(_components.a, {\n        href: \"/docs/fields/overview\",\n        children: \"fields\"\n      }), \" to be saved as extra fields on a link inside the Rich Text Editor. When this is present, the fields will render inside a modal that can be opened by clicking the \\\"edit\\\" button on the link element.\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [_jsx(_components.code, {\n        children: \"link.fields\"\n      }), \" may either be an array of fields (in which case all fields defined in it will be appended below the default fields) or a function that accepts the default fields as only argument and returns an array defining the entirety of fields to be used (thus providing a mechanism of overriding the default fields).\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [_jsx(_components.img, {\n        src: \"https://payloadcms.com/images/docs/fields/richText/rte-link-fields-modal.jpg\",\n        alt: \"RichText link fields\"\n      }), \"\\n\", _jsx(_components.em, {\n        children: \"RichText link with custom fields\"\n      })]\n    }), \"\\n\", _jsx(_components.p, {\n      children: _jsx(_components.strong, {\n        children: _jsx(_components.code, {\n          children: \"upload.collections[collection-name].fields\"\n        })\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"This allows \", _jsx(_components.a, {\n        href: \"/docs/fields/overview\",\n        children: \"fields\"\n      }), \" to be saved as meta data on an upload field inside the Rich Text Editor. When this is present, the fields will render inside a modal that can be opened by clicking the \\\"edit\\\" button on the upload element.\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [_jsx(_components.img, {\n        src: \"https://payloadcms.com/images/docs/fields/richText/rte-upload-element.jpg\",\n        alt: \"RichText upload element\"\n      }), \"\\n\", _jsx(_components.em, {\n        children: \"RichText field using the upload element\"\n      })]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [_jsx(_components.img, {\n        src: \"https://payloadcms.com/images/docs/fields/richText/rte-upload-fields-modal.jpg\",\n        alt: \"RichText upload element modal\"\n      }), \"\\n\", _jsx(_components.em, {\n        children: \"RichText upload element modal displaying fields from the config\"\n      })]\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Relationship element\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"The built-in \", _jsx(_components.code, {\n        children: \"relationship\"\n      }), \" element is a powerful way to reference other Documents directly within your Rich Text editor.\"]\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Upload element\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Similar to the \", _jsx(_components.code, {\n        children: \"relationship\"\n      }), \" element, the \", _jsx(_components.code, {\n        children: \"upload\"\n      }), \" element is a user-friendly way to reference \", _jsx(_components.a, {\n        href: \"/docs/upload/overview\",\n        children: \"Upload-enabled collections\"\n      }), \" with a UI specifically designed for media / image-based uploads.\"]\n    }), \"\\n\", _jsxs(Banner, {\n      type: \"success\",\n      children: [_jsx(_components.p, {\n        children: _jsx(_components.strong, {\n          children: \"Tip:\"\n        })\n      }), _jsxs(_components.p, {\n        children: [\"Collections are automatically allowed to be selected within the Rich Text relationship and upload\\nelements by default. If you want to disable a collection from being able to be referenced in Rich\\nText fields, set the collection admin options of \", _jsx(_components.strong, {\n          children: \"enableRichTextLink\"\n        }), \" and\\n\", _jsx(_components.strong, {\n          children: \"enableRichTextRelationship\"\n        }), \" to false.\"]\n      })]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Relationship and Upload elements are populated dynamically into your Rich Text field' content. Within the REST and Local APIs, any present RichText \", _jsx(_components.code, {\n        children: \"relationship\"\n      }), \" or \", _jsx(_components.code, {\n        children: \"upload\"\n      }), \" elements will respect the \", _jsx(_components.code, {\n        children: \"depth\"\n      }), \" option that you pass, and will be populated accordingly. In GraphQL, each \", _jsx(_components.code, {\n        children: \"richText\"\n      }), \" field accepts an argument of \", _jsx(_components.code, {\n        children: \"depth\"\n      }), \" for you to utilize.\"]\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"TextAlign element\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Text Alignment is not included by default and can be added to a Rich Text Editor by adding \", _jsx(_components.code, {\n        children: \"textAlign\"\n      }), \" to the list of elements. TextAlign will alter the existing element to include a new \", _jsx(_components.code, {\n        children: \"textAlign\"\n      }), \" field in the resulting JSON. This field can be used in combination with other elements and leaves to position content to the left, center or right.\"]\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Specifying which elements and leaves to allow\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"To specify which default elements or leaves should be allowed to be used for this field, define arrays that contain string names for each element or leaf you wish to enable. To specify a custom element or leaf, pass an object with all corresponding properties as outlined below. View the \", _jsx(_components.a, {\n        href: \"#example\",\n        children: \"example\"\n      }), \" to reference how this all works.\"]\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Building custom elements and leaves\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"You can design and build your own Slate elements and leaves to extend the editor with your own functionality. To do so, first start by reading the \", _jsx(_components.a, {\n        href: \"https://docs.slatejs.org/\",\n        children: \"SlateJS documentation\"\n      }), \" and looking at the \", _jsx(_components.a, {\n        href: \"https://www.slatejs.org/examples/richtext\",\n        children: \"Slate examples\"\n      }), \" to familiarize yourself with the SlateJS editor as a whole.\"]\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Once you're up to speed with the general concepts involved, you can pass in your own elements and leaves to your field's admin config.\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: _jsx(_components.strong, {\n        children: \"Both custom elements and leaves are defined via the following config:\"\n      })\n    }), \"\\n\", _jsxs(_components.table, {\n      children: [_jsx(_components.thead, {\n        children: _jsxs(_components.tr, {\n          children: [_jsx(_components.th, {\n            children: \"Property\"\n          }), _jsx(_components.th, {\n            children: \"Description\"\n          })]\n        })\n      }), _jsxs(_components.tbody, {\n        children: [_jsxs(_components.tr, {\n          children: [_jsxs(_components.td, {\n            children: [_jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"name\"\n              })\n            }), \" *\"]\n          }), _jsxs(_components.td, {\n            children: [\"The default name to be used as a \", _jsx(_components.code, {\n              children: \"type\"\n            }), \" for this element.\"]\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsxs(_components.td, {\n            children: [_jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"Button\"\n              })\n            }), \" *\"]\n          }), _jsx(_components.td, {\n            children: \"A React component to be rendered in the Rich Text toolbar.\"\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"plugins\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"An array of plugins to provide to the Rich Text editor.\"\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"type\"\n              })\n            })\n          }), _jsxs(_components.td, {\n            children: [\"A type that overrides the default type used by \", _jsx(_components.code, {\n              children: \"name\"\n            })]\n          })]\n        })]\n      })]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Custom \", _jsx(_components.code, {\n        children: \"Element\"\n      }), \"s also require the \", _jsx(_components.code, {\n        children: \"Element\"\n      }), \" property set to a React component to be rendered as the \", _jsx(_components.code, {\n        children: \"Element\"\n      }), \" within the rich text editor itself.\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Custom \", _jsx(_components.code, {\n        children: \"Leaf\"\n      }), \" objects follow a similar pattern but require you to define the \", _jsx(_components.code, {\n        children: \"Leaf\"\n      }), \" property instead.\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Specifying custom \", _jsx(_components.code, {\n        children: \"Type\"\n      }), \"s let you extend your custom elements by adding additional fields to your JSON object.\"]\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Example\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: _jsx(_components.code, {\n        children: \"collections/ExampleCollection.ts\"\n      })\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import type { CollectionConfig } from 'payload'\\n\\nimport { slateEditor } from '@payloadcms/richtext-slate'\\n\\nexport const ExampleCollection: CollectionConfig = {\\n  slug: 'example-collection',\\n  fields: [\\n    {\\n      name: 'content', // required\\n      type: 'richText', // required\\n      defaultValue: [\\n        {\\n          children: [{ text: 'Here is some default content for this field' }],\\n        },\\n      ],\\n      required: true,\\n      editor: slateEditor({\\n        admin: {\\n          elements: [\\n            'h2',\\n            'h3',\\n            'h4',\\n            'link',\\n            'blockquote',\\n            {\\n              name: 'cta',\\n              Button: CustomCallToActionButton,\\n              Element: CustomCallToActionElement,\\n              plugins: [\\n                // any plugins that are required by this element go here\\n              ],\\n            },\\n          ],\\n          leaves: [\\n            'bold',\\n            'italic',\\n            {\\n              name: 'highlight',\\n              Button: CustomHighlightButton,\\n              Leaf: CustomHighlightLeaf,\\n              plugins: [\\n                // any plugins that are required by this leaf go here\\n              ],\\n            },\\n          ],\\n          link: {\\n            // Inject your own fields into the Link element\\n            fields: [\\n              {\\n                name: 'rel',\\n                label: 'Rel Attribute',\\n                type: 'select',\\n                hasMany: true,\\n                options: ['noopener', 'noreferrer', 'nofollow'],\\n              },\\n            ],\\n          },\\n          upload: {\\n            collections: {\\n              media: {\\n                fields: [\\n                  // any fields that you would like to save\\n                  // on an upload element in the `media` collection\\n                ],\\n              },\\n            },\\n          },\\n        },\\n      }),\\n    },\\n  ],\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Generating HTML\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"As the Rich Text field saves its content in a JSON format, you'll need to render it as HTML yourself. Here is an example for how to generate JSX / HTML from Rich Text content:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import React, { Fragment } from \\\"react\\\";\\nimport escapeHTML from \\\"escape-html\\\";\\nimport { Text } from \\\"slate\\\";\\n\\nconst serialize = (children) =\u003e\\n  children.map((node, i) =\u003e {\\n    if (Text.isText(node)) {\\n      let text = (\\n        \u003cspan dangerouslySetInnerHTML={{ __html: escapeHTML(node.text) }} /\u003e\\n      );\\n\\n      if (node.bold) {\\n        text = \u003cstrong key={i}\u003e{text}\u003c/strong\u003e;\\n      }\\n\\n      if (node.code) {\\n        text = \u003ccode key={i}\u003e{text}\u003c/code\u003e;\\n      }\\n\\n      if (node.italic) {\\n        text = \u003cem key={i}\u003e{text}\u003c/em\u003e;\\n      }\\n\\n      // Handle other leaf types here...\\n\\n      return \u003cFragment key={i}\u003e{text}\u003c/Fragment\u003e;\\n    }\\n\\n    if (!node) {\\n      return null;\\n    }\\n\\n    switch (node.type) {\\n      case \\\"h1\\\":\\n        return \u003ch1 key={i}\u003e{serialize(node.children)}\u003c/h1\u003e;\\n      // Iterate through all headings here...\\n      case \\\"h6\\\":\\n        return \u003ch6 key={i}\u003e{serialize(node.children)}\u003c/h6\u003e;\\n      case \\\"blockquote\\\":\\n        return \u003cblockquote key={i}\u003e{serialize(node.children)}\u003c/blockquote\u003e;\\n      case \\\"ul\\\":\\n        return \u003cul key={i}\u003e{serialize(node.children)}\u003c/ul\u003e;\\n      case \\\"ol\\\":\\n        return \u003col key={i}\u003e{serialize(node.children)}\u003c/ol\u003e;\\n      case \\\"li\\\":\\n        return \u003cli key={i}\u003e{serialize(node.children)}\u003c/li\u003e;\\n      case \\\"link\\\":\\n        return (\\n          \u003ca href={escapeHTML(node.url)} key={i}\u003e\\n            {serialize(node.children)}\\n          \u003c/a\u003e\\n        );\\n\\n      default:\\n        return \u003cp key={i}\u003e{serialize(node.children)}\u003c/p\u003e;\\n    }\\n  });\\n\"\n      })\n    }), \"\\n\", _jsxs(Banner, {\n      children: [_jsx(_components.p, {\n        children: _jsx(_components.strong, {\n          children: \"Note:\"\n        })\n      }), _jsx(_components.p, {\n        children: \"The above example is for how to render to JSX, although for plain HTML the pattern is similar.\\nJust remove the JSX and return HTML strings instead!\"\n      })]\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Built-in SlateJS Plugins\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Payload comes with a few built-in SlateJS plugins which can be extended to make developing your own elements and leaves a bit easier.\"\n    }), \"\\n\", _jsx(_components.h4, {\n      children: _jsx(_components.code, {\n        children: \"shouldBreakOutOnEnter\"\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Payload's built-in heading elements all allow a \\\"hard return\\\" to \\\"break out\\\" of the currently active element. For example, if you hit \", _jsx(_components.code, {\n        children: \"enter\"\n      }), \" while typing an \", _jsx(_components.code, {\n        children: \"h1\"\n      }), \", the \", _jsx(_components.code, {\n        children: \"h1\"\n      }), \" will be \\\"broken out of\\\" and you'll be able to continue writing as the default paragraph element.\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"If you want to utilize this functionality within your own custom elements, you can do so by adding a custom plugin to your \", _jsx(_components.code, {\n        children: \"element\"\n      }), \" like the following \\\"large body\\\" element example:\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [_jsx(_components.code, {\n        children: \"customLargeBodyElement.js\"\n      }), \":\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import Button from './Button'\\nimport Element from './Element'\\nimport withLargeBody from './plugin'\\n\\nexport default {\\n  name: 'large-body',\\n  Button,\\n  Element,\\n  plugins: [\\n    (incomingEditor) =\u003e {\\n      const editor = incomingEditor\\n      const { shouldBreakOutOnEnter } = editor\\n\\n      editor.shouldBreakOutOnEnter = (element) =\u003e\\n        element.type === 'large-body' ? true : shouldBreakOutOnEnter(element)\\n\\n      return editor\\n    },\\n  ],\\n}\\n\"\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Above, you can see that we are creating a custom SlateJS element with a name of \", _jsx(_components.code, {\n        children: \"large-body\"\n      }), \". This might render a slightly larger body copy on the frontend of your app(s). We pass it a name, button, and element—but additionally, we pass it a \", _jsx(_components.code, {\n        children: \"plugins\"\n      }), \" array containing a single SlateJS plugin.\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"The plugin itself extends Payload's built-in \", _jsx(_components.code, {\n        children: \"shouldBreakOutOnEnter\"\n      }), \" Slate function to add its own element name to the list of elements that should \\\"break out\\\" when the \", _jsx(_components.code, {\n        children: \"enter\"\n      }), \" key is pressed.\"]\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"TypeScript\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"If you are building your own custom Rich Text elements or leaves, you may benefit from importing the following types:\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import type {\\n  RichTextCustomElement,\\n  RichTextCustomLeaf,\\n} from '@payloadcms/richtext-slate'\\n\"\n      })\n    })]\n  });\n}\nfunction MDXContent(props = {}) {\n  const {wrapper: MDXLayout} = Object.assign({}, _provideComponents(), props.components);\n  return MDXLayout ? _jsx(MDXLayout, Object.assign({}, props, {\n    children: _jsx(_createMdxContent, props)\n  })) : _createMdxContent(props);\n}\nreturn {\n  default: MDXContent\n};\nfunction _missingMdxReference(id, component) {\n  throw new Error(\"Expected \" + (component ? \"component\" : \"object\") + \" `\" + id + \"` to be defined: you likely forgot to import, pass, or provide it.\");\n}\n","frontmatter":{},"scope":{}}},"__N_SSG":true},"page":"/docs/[...slug]","query":{"slug":["rich-text","slate"]},"buildId":"rEpVRygLyV6yJ0i_Ohw0C","isFallback":false,"gsp":true,"scriptLoader":[]}</script></body></html>

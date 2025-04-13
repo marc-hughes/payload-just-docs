@@ -1,0 +1,180 @@
+<!DOCTYPE html><html><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width"/><meta name="next-head-count" content="2"/><link rel="preload" href="/_next/static/css/adeeaed65336a824.css" as="style" crossorigin=""/><link rel="stylesheet" href="/_next/static/css/adeeaed65336a824.css" crossorigin="" data-n-g=""/><noscript data-n-css=""></noscript><script defer="" crossorigin="" nomodule="" src="/_next/static/chunks/polyfills-c67a75d1b6f99dc8.js"></script><script src="/_next/static/chunks/webpack-fd8027ecb5121007.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/framework-fae63b21a27d6472.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/main-04104d75f6814829.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/pages/_app-2747846ed27f1501.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/pages/docs/%5B...slug%5D-e023289636109d90.js" defer="" crossorigin=""></script><script src="/_next/static/rEpVRygLyV6yJ0i_Ohw0C/_buildManifest.js" defer="" crossorigin=""></script><script src="/_next/static/rEpVRygLyV6yJ0i_Ohw0C/_ssgManifest.js" defer="" crossorigin=""></script></head><body><div id="__next"><div class="container mx-auto px-4 py-8 max-w-4xl"><h1 class="text-4xl font-bold mb-4">Preview</h1><p class="text-xl text-gray-600 mb-8">Enable links to your front-end to preview published or draft content.</p><div class="prose prose-lg max-w-none"><p>Preview is a feature that allows you to generate a direct link to your front-end application. When enabled, a &quot;preview&quot; button will appear on the Edit View within the <a href="./overview">Admin Panel</a> with an href pointing to the URL you provide. This will provide your editors with a quick way of navigating to the front-end application where that Document&#x27;s data is represented. Otherwise, they&#x27;d have to determine that URL themselves which is not always straightforward especially in complex apps.</p>
+<p>The Preview feature can also be used to achieve something known as &quot;Draft Preview&quot;. With Draft Preview, you can navigate to your front-end application and enter &quot;draft mode&quot;, where your queries are modified to fetch draft content instead of published content. This is useful for seeing how your content will look before being published. <a href="#draft-preview">More details</a>.</p>
+<div class="p-4 my-4 rounded-lg border bg-yellow-50 border-yellow-200 text-yellow-800"><svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg><p><strong>Note:</strong> Preview is different than <a href="../live-preview/overview">Live Preview</a>.
+Live Preview loads your app within an iframe and renders it in the Admin Panel
+allowing you to see changes in real-time. Preview, on the other hand, allows
+you to generate a direct link to your front-end application.</p></div>
+<p>To add Preview, pass a function to the <code>admin.preview</code> property in any <a href="../configuration/collections#admin-options">Collection Config</a> or <a href="../configuration/globals#admin-options">Global Config</a>:</p>
+<pre><code class="language-ts">import type { CollectionConfig } from &#x27;payload&#x27;
+
+export const Pages: CollectionConfig = {
+  slug: &#x27;pages&#x27;,
+  admin: {
+    preview: ({ slug }) =&gt; `http://localhost:3000/${slug}`,
+  },
+  fields: [
+    {
+      name: &#x27;slug&#x27;,
+      type: &#x27;text&#x27;,
+    },
+  ],
+}
+</code></pre>
+<h2>Options</h2>
+<p>The <code>preview</code> function resolves to a string that points to your front-end application with additional URL parameters. This can be an absolute URL or a relative path, and can run async if needed.</p>
+<p>The following arguments are provided to the <code>preview</code> function:</p>
+<div class="overflow-x-auto my-8"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr class="even:bg-gray-50"><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Path</th><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>doc</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">The data of the Document being edited. This includes changes that have not yet been saved.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>options</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">An object with additional properties.</td></tr></tbody></table></div>
+<p>The <code>options</code> object contains the following properties:</p>
+<div class="overflow-x-auto my-8"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr class="even:bg-gray-50"><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Path</th><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>locale</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">The current locale of the Document being edited.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>req</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">The Payload Request object.</td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><strong><code>token</code></strong></td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">The JWT token of the currently authenticated in user.</td></tr></tbody></table></div>
+<p>If your application requires a fully qualified URL, such as within deploying to Vercel Preview Deployments, you can use the <code>req</code> property to build this URL:</p>
+<pre><code class="language-ts">preview: (doc, { req }) =&gt; `${req.protocol}//${req.host}/${doc.slug}` // highlight-line
+</code></pre>
+<h2>Draft Preview</h2>
+<p>The Preview feature can be used to achieve &quot;Draft Preview&quot;. After clicking the preview button from the Admin Panel, you can enter into &quot;draft mode&quot; within your front-end application. This will allow you to adjust your page queries to include the <code>draft: true</code> param. When this param is present on the request, Payload will send back a draft document as opposed to a published one based on the document&#x27;s <code>_status</code> field.</p>
+<p>To enter draft mode, the URL provided to the <code>preview</code> function can point to a custom endpoint in your front-end application that sets a cookie or session variable to indicate that draft mode is enabled. This is framework specific, so the mechanisms here very from framework to framework although the underlying concept is the same.</p>
+<h3>Next.js</h3>
+<p>If you&#x27;re using Next.js, you can do the following code to enter <a href="https://nextjs.org/docs/app/building-your-application/configuring/draft-mode">Draft Mode</a>.</p>
+<h4>Step 1: Format the Preview URL</h4>
+<p>First, format your <code>admin.preview</code> function to point to a custom endpoint that you&#x27;ll open on your front-end. This URL should include a few key query search params:</p>
+<pre><code class="language-ts">import type { CollectionConfig } from &#x27;payload&#x27;
+
+export const Pages: CollectionConfig = {
+  slug: &#x27;pages&#x27;,
+  admin: {
+    preview: ({ slug, collection }) =&gt; {
+      const encodedParams = new URLSearchParams({
+        slug,
+        collection,
+        path: `/${slug}`,
+        previewSecret: process.env.PREVIEW_SECRET || &#x27;&#x27;,
+      })
+
+      return `/preview?${encodedParams.toString()}` // highlight-line
+    },
+  },
+  fields: [
+    {
+      name: &#x27;slug&#x27;,
+      type: &#x27;text&#x27;,
+    },
+  ],
+}
+</code></pre>
+<h4>Step 2: Create the Preview Route</h4>
+<p>Then, create an API route that verifies the preview secret, authenticates the user, and enters draft mode:</p>
+<p><code>/app/preview/route.ts</code></p>
+<pre><code class="language-ts">import type { CollectionSlug, PayloadRequest } from &#x27;payload&#x27;
+import { getPayload } from &#x27;payload&#x27;
+
+import { draftMode } from &#x27;next/headers&#x27;
+import { redirect } from &#x27;next/navigation&#x27;
+
+import configPromise from &#x27;@payload-config&#x27;
+
+export async function GET(
+  req: {
+    cookies: {
+      get: (name: string) =&gt; {
+        value: string
+      }
+    }
+  } &amp; Request,
+): Promise&lt;Response&gt; {
+  const payload = await getPayload({ config: configPromise })
+
+  const { searchParams } = new URL(req.url)
+
+  const path = searchParams.get(&#x27;path&#x27;)
+  const collection = searchParams.get(&#x27;collection&#x27;) as CollectionSlug
+  const slug = searchParams.get(&#x27;slug&#x27;)
+  const previewSecret = searchParams.get(&#x27;previewSecret&#x27;)
+
+  if (previewSecret !== process.env.PREVIEW_SECRET) {
+    return new Response(&#x27;You are not allowed to preview this page&#x27;, {
+      status: 403,
+    })
+  }
+
+  if (!path || !collection || !slug) {
+    return new Response(&#x27;Insufficient search params&#x27;, { status: 404 })
+  }
+
+  if (!path.startsWith(&#x27;/&#x27;)) {
+    return new Response(
+      &#x27;This endpoint can only be used for relative previews&#x27;,
+      { status: 500 },
+    )
+  }
+
+  let user
+
+  try {
+    user = await payload.auth({
+      req: req as unknown as PayloadRequest,
+      headers: req.headers,
+    })
+  } catch (error) {
+    payload.logger.error(
+      { err: error },
+      &#x27;Error verifying token for live preview&#x27;,
+    )
+    return new Response(&#x27;You are not allowed to preview this page&#x27;, {
+      status: 403,
+    })
+  }
+
+  const draft = await draftMode()
+
+  if (!user) {
+    draft.disable()
+    return new Response(&#x27;You are not allowed to preview this page&#x27;, {
+      status: 403,
+    })
+  }
+
+  // You can add additional checks here to see if the user is allowed to preview this page
+
+  draft.enable()
+
+  redirect(path)
+}
+</code></pre>
+<h4>Step 3: Query Draft Content</h4>
+<p>Finally, in your front-end application, you can detect draft mode and adjust your queries to include drafts:</p>
+<p><code>/app/[slug]/page.tsx</code></p>
+<pre><code class="language-ts">export default async function Page({ params: paramsPromise }) {
+  const { slug = &#x27;home&#x27; } = await paramsPromise
+
+  const { isEnabled: isDraftMode } = await draftMode()
+
+  const payload = await getPayload({ config })
+
+  const page = await payload.find({
+    collection: &#x27;pages&#x27;,
+    depth: 0,
+    draft: isDraftMode, // highlight-line
+    limit: 1,
+    overrideAccess: isDraftMode,
+    where: {
+      slug: {
+        equals: slug,
+      },
+    },
+  })?.then(({ docs }) =&gt; docs?.[0])
+
+  if (page === null) {
+    return notFound()
+  }
+
+  return (
+    &lt;main&gt;
+      &lt;h1&gt;{page?.title}&lt;/h1&gt;
+    &lt;/main&gt;
+  )
+}
+</code></pre>
+<div class="p-4 my-4 rounded-lg border bg-green-50 border-green-200 text-green-800"><svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg><p><strong>Note:</strong> For fully working example of this, check of the official <a href="https://github.com/payloadcms/payload/tree/main/examples/draft-preview">Draft
+Preview
+Example</a>
+in the <a href="https://github.com/payloadcms/payload/tree/main/examples">Examples
+Directory</a>.</p></div></div></div></div><script id="__NEXT_DATA__" type="application/json" crossorigin="">{"props":{"pageProps":{"frontMatter":{"title":"Preview","label":"Preview","order":30,"desc":"Enable links to your front-end to preview published or draft content.","keywords":"admin, components, preview, documentation, Content Management System, cms, headless, javascript, node, react, nextjs"},"content":{"compiledSource":"/*@jsxRuntime automatic @jsxImportSource react*/\nconst {Fragment: _Fragment, jsx: _jsx, jsxs: _jsxs} = arguments[0];\nconst {useMDXComponents: _provideComponents} = arguments[0];\nfunction _createMdxContent(props) {\n  const _components = Object.assign({\n    p: \"p\",\n    a: \"a\",\n    strong: \"strong\",\n    code: \"code\",\n    pre: \"pre\",\n    h2: \"h2\",\n    table: \"table\",\n    thead: \"thead\",\n    tr: \"tr\",\n    th: \"th\",\n    tbody: \"tbody\",\n    td: \"td\",\n    h3: \"h3\",\n    h4: \"h4\"\n  }, _provideComponents(), props.components), {Banner} = _components;\n  if (!Banner) _missingMdxReference(\"Banner\", true);\n  return _jsxs(_Fragment, {\n    children: [_jsxs(_components.p, {\n      children: [\"Preview is a feature that allows you to generate a direct link to your front-end application. When enabled, a \\\"preview\\\" button will appear on the Edit View within the \", _jsx(_components.a, {\n        href: \"./overview\",\n        children: \"Admin Panel\"\n      }), \" with an href pointing to the URL you provide. This will provide your editors with a quick way of navigating to the front-end application where that Document's data is represented. Otherwise, they'd have to determine that URL themselves which is not always straightforward especially in complex apps.\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"The Preview feature can also be used to achieve something known as \\\"Draft Preview\\\". With Draft Preview, you can navigate to your front-end application and enter \\\"draft mode\\\", where your queries are modified to fetch draft content instead of published content. This is useful for seeing how your content will look before being published. \", _jsx(_components.a, {\n        href: \"#draft-preview\",\n        children: \"More details\"\n      }), \".\"]\n    }), \"\\n\", _jsx(Banner, {\n      type: \"warning\",\n      children: _jsxs(_components.p, {\n        children: [_jsx(_components.strong, {\n          children: \"Note:\"\n        }), \" Preview is different than \", _jsx(_components.a, {\n          href: \"../live-preview/overview\",\n          children: \"Live Preview\"\n        }), \".\\nLive Preview loads your app within an iframe and renders it in the Admin Panel\\nallowing you to see changes in real-time. Preview, on the other hand, allows\\nyou to generate a direct link to your front-end application.\"]\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"To add Preview, pass a function to the \", _jsx(_components.code, {\n        children: \"admin.preview\"\n      }), \" property in any \", _jsx(_components.a, {\n        href: \"../configuration/collections#admin-options\",\n        children: \"Collection Config\"\n      }), \" or \", _jsx(_components.a, {\n        href: \"../configuration/globals#admin-options\",\n        children: \"Global Config\"\n      }), \":\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import type { CollectionConfig } from 'payload'\\n\\nexport const Pages: CollectionConfig = {\\n  slug: 'pages',\\n  admin: {\\n    preview: ({ slug }) =\u003e `http://localhost:3000/${slug}`,\\n  },\\n  fields: [\\n    {\\n      name: 'slug',\\n      type: 'text',\\n    },\\n  ],\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"Options\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"The \", _jsx(_components.code, {\n        children: \"preview\"\n      }), \" function resolves to a string that points to your front-end application with additional URL parameters. This can be an absolute URL or a relative path, and can run async if needed.\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"The following arguments are provided to the \", _jsx(_components.code, {\n        children: \"preview\"\n      }), \" function:\"]\n    }), \"\\n\", _jsxs(_components.table, {\n      children: [_jsx(_components.thead, {\n        children: _jsxs(_components.tr, {\n          children: [_jsx(_components.th, {\n            children: \"Path\"\n          }), _jsx(_components.th, {\n            children: \"Description\"\n          })]\n        })\n      }), _jsxs(_components.tbody, {\n        children: [_jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"doc\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"The data of the Document being edited. This includes changes that have not yet been saved.\"\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"options\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"An object with additional properties.\"\n          })]\n        })]\n      })]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"The \", _jsx(_components.code, {\n        children: \"options\"\n      }), \" object contains the following properties:\"]\n    }), \"\\n\", _jsxs(_components.table, {\n      children: [_jsx(_components.thead, {\n        children: _jsxs(_components.tr, {\n          children: [_jsx(_components.th, {\n            children: \"Path\"\n          }), _jsx(_components.th, {\n            children: \"Description\"\n          })]\n        })\n      }), _jsxs(_components.tbody, {\n        children: [_jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"locale\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"The current locale of the Document being edited.\"\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"req\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"The Payload Request object.\"\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: _jsx(_components.strong, {\n              children: _jsx(_components.code, {\n                children: \"token\"\n              })\n            })\n          }), _jsx(_components.td, {\n            children: \"The JWT token of the currently authenticated in user.\"\n          })]\n        })]\n      })]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"If your application requires a fully qualified URL, such as within deploying to Vercel Preview Deployments, you can use the \", _jsx(_components.code, {\n        children: \"req\"\n      }), \" property to build this URL:\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"preview: (doc, { req }) =\u003e `${req.protocol}//${req.host}/${doc.slug}` // highlight-line\\n\"\n      })\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"Draft Preview\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"The Preview feature can be used to achieve \\\"Draft Preview\\\". After clicking the preview button from the Admin Panel, you can enter into \\\"draft mode\\\" within your front-end application. This will allow you to adjust your page queries to include the \", _jsx(_components.code, {\n        children: \"draft: true\"\n      }), \" param. When this param is present on the request, Payload will send back a draft document as opposed to a published one based on the document's \", _jsx(_components.code, {\n        children: \"_status\"\n      }), \" field.\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"To enter draft mode, the URL provided to the \", _jsx(_components.code, {\n        children: \"preview\"\n      }), \" function can point to a custom endpoint in your front-end application that sets a cookie or session variable to indicate that draft mode is enabled. This is framework specific, so the mechanisms here very from framework to framework although the underlying concept is the same.\"]\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Next.js\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"If you're using Next.js, you can do the following code to enter \", _jsx(_components.a, {\n        href: \"https://nextjs.org/docs/app/building-your-application/configuring/draft-mode\",\n        children: \"Draft Mode\"\n      }), \".\"]\n    }), \"\\n\", _jsx(_components.h4, {\n      children: \"Step 1: Format the Preview URL\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"First, format your \", _jsx(_components.code, {\n        children: \"admin.preview\"\n      }), \" function to point to a custom endpoint that you'll open on your front-end. This URL should include a few key query search params:\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import type { CollectionConfig } from 'payload'\\n\\nexport const Pages: CollectionConfig = {\\n  slug: 'pages',\\n  admin: {\\n    preview: ({ slug, collection }) =\u003e {\\n      const encodedParams = new URLSearchParams({\\n        slug,\\n        collection,\\n        path: `/${slug}`,\\n        previewSecret: process.env.PREVIEW_SECRET || '',\\n      })\\n\\n      return `/preview?${encodedParams.toString()}` // highlight-line\\n    },\\n  },\\n  fields: [\\n    {\\n      name: 'slug',\\n      type: 'text',\\n    },\\n  ],\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(_components.h4, {\n      children: \"Step 2: Create the Preview Route\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Then, create an API route that verifies the preview secret, authenticates the user, and enters draft mode:\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: _jsx(_components.code, {\n        children: \"/app/preview/route.ts\"\n      })\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"import type { CollectionSlug, PayloadRequest } from 'payload'\\nimport { getPayload } from 'payload'\\n\\nimport { draftMode } from 'next/headers'\\nimport { redirect } from 'next/navigation'\\n\\nimport configPromise from '@payload-config'\\n\\nexport async function GET(\\n  req: {\\n    cookies: {\\n      get: (name: string) =\u003e {\\n        value: string\\n      }\\n    }\\n  } \u0026 Request,\\n): Promise\u003cResponse\u003e {\\n  const payload = await getPayload({ config: configPromise })\\n\\n  const { searchParams } = new URL(req.url)\\n\\n  const path = searchParams.get('path')\\n  const collection = searchParams.get('collection') as CollectionSlug\\n  const slug = searchParams.get('slug')\\n  const previewSecret = searchParams.get('previewSecret')\\n\\n  if (previewSecret !== process.env.PREVIEW_SECRET) {\\n    return new Response('You are not allowed to preview this page', {\\n      status: 403,\\n    })\\n  }\\n\\n  if (!path || !collection || !slug) {\\n    return new Response('Insufficient search params', { status: 404 })\\n  }\\n\\n  if (!path.startsWith('/')) {\\n    return new Response(\\n      'This endpoint can only be used for relative previews',\\n      { status: 500 },\\n    )\\n  }\\n\\n  let user\\n\\n  try {\\n    user = await payload.auth({\\n      req: req as unknown as PayloadRequest,\\n      headers: req.headers,\\n    })\\n  } catch (error) {\\n    payload.logger.error(\\n      { err: error },\\n      'Error verifying token for live preview',\\n    )\\n    return new Response('You are not allowed to preview this page', {\\n      status: 403,\\n    })\\n  }\\n\\n  const draft = await draftMode()\\n\\n  if (!user) {\\n    draft.disable()\\n    return new Response('You are not allowed to preview this page', {\\n      status: 403,\\n    })\\n  }\\n\\n  // You can add additional checks here to see if the user is allowed to preview this page\\n\\n  draft.enable()\\n\\n  redirect(path)\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(_components.h4, {\n      children: \"Step 3: Query Draft Content\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Finally, in your front-end application, you can detect draft mode and adjust your queries to include drafts:\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: _jsx(_components.code, {\n        children: \"/app/[slug]/page.tsx\"\n      })\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-ts\",\n        children: \"export default async function Page({ params: paramsPromise }) {\\n  const { slug = 'home' } = await paramsPromise\\n\\n  const { isEnabled: isDraftMode } = await draftMode()\\n\\n  const payload = await getPayload({ config })\\n\\n  const page = await payload.find({\\n    collection: 'pages',\\n    depth: 0,\\n    draft: isDraftMode, // highlight-line\\n    limit: 1,\\n    overrideAccess: isDraftMode,\\n    where: {\\n      slug: {\\n        equals: slug,\\n      },\\n    },\\n  })?.then(({ docs }) =\u003e docs?.[0])\\n\\n  if (page === null) {\\n    return notFound()\\n  }\\n\\n  return (\\n    \u003cmain\u003e\\n      \u003ch1\u003e{page?.title}\u003c/h1\u003e\\n    \u003c/main\u003e\\n  )\\n}\\n\"\n      })\n    }), \"\\n\", _jsx(Banner, {\n      type: \"success\",\n      children: _jsxs(_components.p, {\n        children: [_jsx(_components.strong, {\n          children: \"Note:\"\n        }), \" For fully working example of this, check of the official \", _jsx(_components.a, {\n          href: \"https://github.com/payloadcms/payload/tree/main/examples/draft-preview\",\n          children: \"Draft\\nPreview\\nExample\"\n        }), \"\\nin the \", _jsx(_components.a, {\n          href: \"https://github.com/payloadcms/payload/tree/main/examples\",\n          children: \"Examples\\nDirectory\"\n        }), \".\"]\n      })\n    })]\n  });\n}\nfunction MDXContent(props = {}) {\n  const {wrapper: MDXLayout} = Object.assign({}, _provideComponents(), props.components);\n  return MDXLayout ? _jsx(MDXLayout, Object.assign({}, props, {\n    children: _jsx(_createMdxContent, props)\n  })) : _createMdxContent(props);\n}\nreturn {\n  default: MDXContent\n};\nfunction _missingMdxReference(id, component) {\n  throw new Error(\"Expected \" + (component ? \"component\" : \"object\") + \" `\" + id + \"` to be defined: you likely forgot to import, pass, or provide it.\");\n}\n","frontmatter":{},"scope":{}}},"__N_SSG":true},"page":"/docs/[...slug]","query":{"slug":["admin","preview"]},"buildId":"rEpVRygLyV6yJ0i_Ohw0C","isFallback":false,"gsp":true,"scriptLoader":[]}</script></body></html>

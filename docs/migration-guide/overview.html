@@ -1,0 +1,1081 @@
+<!DOCTYPE html><html><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width"/><meta name="next-head-count" content="2"/><link rel="preload" href="/_next/static/css/adeeaed65336a824.css" as="style" crossorigin=""/><link rel="stylesheet" href="/_next/static/css/adeeaed65336a824.css" crossorigin="" data-n-g=""/><noscript data-n-css=""></noscript><script defer="" crossorigin="" nomodule="" src="/_next/static/chunks/polyfills-c67a75d1b6f99dc8.js"></script><script src="/_next/static/chunks/webpack-fd8027ecb5121007.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/framework-fae63b21a27d6472.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/main-04104d75f6814829.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/pages/_app-2747846ed27f1501.js" defer="" crossorigin=""></script><script src="/_next/static/chunks/pages/docs/%5B...slug%5D-e023289636109d90.js" defer="" crossorigin=""></script><script src="/_next/static/rEpVRygLyV6yJ0i_Ohw0C/_buildManifest.js" defer="" crossorigin=""></script><script src="/_next/static/rEpVRygLyV6yJ0i_Ohw0C/_ssgManifest.js" defer="" crossorigin=""></script></head><body><div id="__next"><div class="container mx-auto px-4 py-8 max-w-4xl"><h1 class="text-4xl font-bold mb-4">2.0 to 3.0 Migration Guide</h1><p class="text-xl text-gray-600 mb-8">Upgrade guide for Payload 2.x projects migrating to 3.0.</p><div class="prose prose-lg max-w-none"><h1>Payload 2.0 to 3.0 Migration Guide</h1>
+<p>Payload 3.0 completely replatforms the Admin Panel from a React Router single-page application onto the Next.js App Router with full support for React Server Components. This change completely separates Payload &quot;core&quot; from its rendering and HTTP layers, making it truly Node-safe and portable.</p>
+<p>If you are upgrading from a <em>previous beta</em>, please see the <a href="#upgrade-from-previous-beta">Upgrade From Previous Beta</a> section.</p>
+<h2>What has changed?</h2>
+<p>The core logic and principles of Payload remain the same from 2.0 to 3.0, with the majority of changes affecting specifically the HTTP layer and the Admin Panel, which is now built upon Next.js. With this change, your entire application can be served within a single repo, with Payload endpoints are now opened within your own Next.js application, directly alongside your frontend. Payload is still headless, you will still be able to leverage it completely headlessly just as you do now with Sveltekit, etc. All Payload APIs remain exactly the same (with a few new features), and the Payload Config is generally the same, with the breaking changes detailed below.</p>
+<h3>Table of Contents</h3>
+<p>All breaking changes are listed below. If you encounter changes that are not explicitly listed here, please consider contributing to this documentation by submitting a PR.</p>
+<ul>
+<li><a href="#installation">Installation</a></li>
+<li><a href="#breaking-changes">Breaking Changes</a></li>
+<li><a href="#custom-components">Custom Components</a></li>
+<li><a href="#endpoints">Endpoints</a></li>
+<li><a href="#react-hooks">React Hooks</a></li>
+<li><a href="#types">Types</a></li>
+<li><a href="#email-adapters">Email Adapters</a></li>
+<li><a href="#plugins">Plugins</a></li>
+<li><a href="#upgrade-from-previous-beta">Upgrade From Previous Beta</a></li>
+</ul>
+<h2>Installation</h2>
+<p>Payload 3.0 requires a set of auto-generated files that you will need to bring into your existing project. The easiest way of acquiring these is by initializing a new project via <code>create-payload-app</code>, then replace the provided Payload Config with your own.</p>
+<pre><code class="language-bash">  npx create-payload-app
+</code></pre>
+<p>For more details, see the <a href="https://payloadcms.com/docs/getting-started/installation">Documentation</a>.</p>
+<ol>
+<li>
+<p><strong>Install new dependencies of Payload, Next.js and React</strong>:</p>
+<p>Refer to the package.json file made in the create-payload-app, including peerDependencies, devDependencies, and dependencies. The core package and plugins require all versions to be synced. Previously, on 2.x it was possible to be running the latest version of Payload 2.x with an older version of db-mongodb for example. This is no longer the case.</p>
+<pre><code class="language-bash">  pnpm i next react react-dom payload @payloadcms/ui @payloadcms/next
+</code></pre>
+<p>Also install the other @payloadcms packages specific to the plugins and adapters you are using. Depending on your project, these may include:</p>
+<ul>
+<li>@payloadcms/db-mongodb</li>
+<li>@payloadcms/db-postgres</li>
+<li>@payloadcms/richtext-slate</li>
+<li>@payloadcms/richtext-lexical</li>
+<li>@payloadcms/plugin-form-builder</li>
+<li>@payloadcms/plugin-nested-docs</li>
+<li>@payloadcms/plugin-redirects</li>
+<li>@payloadcms/plugin-relationship</li>
+<li>@payloadcms/plugin-search</li>
+<li>@payloadcms/plugin-sentry</li>
+<li>@payloadcms/plugin-seo</li>
+<li>@payloadcms/plugin-stripe</li>
+<li>@payloadcms/plugin-cloud-storage - Read <a href="#@payloadcms/plugin-cloud-storage">More</a>.</li>
+</ul>
+</li>
+<li>
+<p>Uninstall deprecated packages:</p>
+<pre><code class="language-bash">pnpm remove express nodemon @payloadcms/bundler-webpack @payloadcms/bundler-vite
+</code></pre>
+</li>
+<li>
+<p>Database Adapter Migrations</p>
+<p><em>If you have existing data</em> and are using the MongoDB or Postgres adapters, you will need to run the database migrations to ensure your database schema is up-to-date.</p>
+<ul>
+<li><a href="https://github.com/payloadcms/payload/releases/tag/v3.0.0-beta.39">postgres</a></li>
+<li><a href="https://github.com/payloadcms/payload/releases/tag/v3.0.0-beta.131">mongodb</a></li>
+</ul>
+</li>
+<li>
+<p>For Payload Cloud users, the plugin has changed.</p>
+<p>Uninstall the old package:</p>
+<pre><code class="language-bash">pnpm remove @payloadcms/plugin-cloud
+</code></pre>
+<p>Install the new package:</p>
+<pre><code class="language-bash">pnpm i @payloadcms/payload-cloud
+</code></pre>
+<pre><code class="language-diff">// payload.config.ts
+- import { payloadCloud } from &#x27;@payloadcms/plugin-cloud&#x27;
++ import { payloadCloudPlugin } from &#x27;@payloadcms/payload-cloud&#x27;
+
+buildConfig({
+  // ...
+  plugins: [
+-   payloadCloud()
++   payloadCloudPlugin()
+  ]
+})
+</code></pre>
+</li>
+<li>
+<p><strong>Optional</strong> sharp dependency</p>
+<p>If you have upload enabled collections that use <code>formatOptions</code>, <code>imageSizes</code>, or <code>resizeOptions</code>—payload expects to have <code>sharp</code> installed. In 2.0 this was a dependency was installed for you. Now it is only installed if needed. If you have any of these options set, you will need to install <code>sharp</code> and add it to your payload.config.ts:</p>
+<pre><code class="language-bash">pnpm i sharp
+</code></pre>
+<pre><code class="language-diff">// payload.config.ts
+import sharp from &#x27;sharp&#x27;
+buildConfig({
+// ...
++   sharp,
+})
+</code></pre>
+</li>
+</ol>
+<h2>Breaking Changes</h2>
+<ol>
+<li>
+<p>Delete the <code>admin.bundler</code> property from your Payload Config. Payload no longer bundles the Admin Panel. Instead, we rely directly on Next.js for bundling.</p>
+<pre><code class="language-diff">// payload.config.ts
+- import { webpackBundler } from &#x27;@payloadcms/bundler-webpack&#x27;
+
+buildConfig({
+  // ...
+  admin: {
+    // ...
+-   bundler: webpackBundler(),
+  }
+})
+</code></pre>
+<p>This also means that the <code>@payloadcms/bundler-webpack</code> and <code>@payloadcms/bundler-vite</code> packages have been deprecated. You can completely uninstall those from your project by removing them from your <code>package.json</code> file and re-running your package manager’s installation process, i.e. <code>pnpm i</code>.</p>
+</li>
+<li>
+<p>Add the <code>secret</code> property to your Payload Config. This used to be set in the <code>payload.init()</code> function of your <code>server.ts</code> file. Instead, move it to <code>payload.config.ts</code>:</p>
+<pre><code class="language-diff">// payload.config.ts
+
+buildConfig({
+  // ...
++ secret: process.env.PAYLOAD_SECRET
+})
+</code></pre>
+</li>
+<li>
+<p>Environment variables prefixed with <code>PAYLOAD_PUBLIC</code> will no longer be available on the client. In order to access them on the client, those will now have to be prefixed with <code>NEXT_PUBLIC</code> instead.</p>
+<pre><code class="language-diff">&#x27;use client&#x27;
+- const var = process.env.PAYLOAD_PUBLIC_MY_ENV_VAR
++ const var = process.env.NEXT_PUBLIC_MY_ENV_VAR
+</code></pre>
+<p>For more details, see the <a href="https://payloadcms.com/docs/configuration/environment-vars">Documentation</a>.</p>
+</li>
+<li>
+<p>The <code>req</code> object used to extend the <a href="https://expressjs.com/">Express Request</a>, but now extends the <a href="https://developer.mozilla.org/en-US/docs/Web/API/Request">Web Request</a>. You may need to update your code accordingly to reflect this change. For example:</p>
+<pre><code class="language-diff">- req.headers[&#x27;content-type&#x27;]
++ req.headers.get(&#x27;content-type&#x27;)
+</code></pre>
+</li>
+<li>
+<p>The <code>admin.css</code> and <code>admin.scss</code> properties in the Payload Config have been removed.</p>
+<pre><code class="language-diff">// payload.config.ts
+
+buildConfig({
+  // ...
+  admin: {
+    // ...
+-   css: &#x27;&#x27;,
+-   scss: &#x27;&#x27;
+  }
+})
+</code></pre>
+<p>To migrate, choose one of the following options:</p>
+<ol>
+<li>
+<p>For most use cases, you can simply customize the file located at <code>(payload)/custom.scss</code>. You can import or add your own styles here, such as for Tailwind.</p>
+</li>
+<li>
+<p>For plugins author, you can use a Custom Provider at <code>admin.components.providers</code> to import your stylesheet:</p>
+<pre><code class="language-tsx">// payload.config.js
+
+//...
+admin: {
+  components: {
+    providers: [
+      MyProvider: &#x27;./providers/MyProvider.tsx&#x27;
+    ]
+  }
+},
+//...
+
+// providers/MyProvider.tsx
+
+&#x27;use client&#x27;
+import React from &#x27;react&#x27;
+import &#x27;./globals.css&#x27;
+
+export const MyProvider: React.FC&lt;{children?: any}= ({ children }) ={
+  return (
+    &lt;React.fragment&gt;
+      {children}
+    &lt;/React.fragment&gt;
+  )
+}
+</code></pre>
+</li>
+</ol>
+</li>
+<li>
+<p>The <code>admin.indexHTML</code> property has been removed. Delete this from your Payload Config.</p>
+<pre><code class="language-diff">// payload.config.ts
+
+buildConfig({
+  // ...
+  admin: {
+    // ...
+-   indexHTML: &#x27;&#x27;
+  }
+})
+</code></pre>
+</li>
+<li>
+<p>The <code>collection.admin.hooks</code> property has been removed. Instead, use the new <code>beforeDuplicate</code> field-level hook which take the usual field hook arguments.</p>
+<pre><code class="language-diff">// collections/Posts.ts
+import type { CollectionConfig } from &#x27;payload&#x27;
+
+export const PostsCollection: CollectionConfig = {
+  slug: &#x27;posts&#x27;,
+  admin: {
+    hooks: {
+-     beforeDuplicate: ({ data }) =&gt; {
+-       return {
+-         ...data,
+-         title: `${data.title}-duplicate`
+-       }
+-     }
+    }
+  },
+  fields: [
+    {
+      name: &#x27;title&#x27;,
+      type: &#x27;text&#x27;,
+      hooks: {
++      beforeDuplicate: [
++        ({ data }) =&gt; `${data.title}-duplicate`
++      ],
+      },
+    },
+  ],
+}
+</code></pre>
+</li>
+<li>
+<p>Fields with <code>unique: true</code> now automatically be appended with “- Copy” through the new <code>admin.beforeDuplicate</code> field hooks (see previous bullet).</p>
+</li>
+<li>
+<p>The <code>upload.staticDir</code> property must now be an absolute path. Before it would attempt to use the location of the Payload Config and merge the relative path set for staticDir.</p>
+<pre><code class="language-diff">// collections/Media.ts
+import type { CollectionConfig } from &#x27;payload&#x27;
+import path from &#x27;path&#x27;
++ import { fileURLToPath } from &#x27;url&#x27;
+
++ const filename = fileURLToPath(import.meta.url)
++ const dirname = path.dirname(filename)
+
+export const MediaCollection: CollectionConfig = {
+  slug: &#x27;media&#x27;,
+  upload: {
+-   staticDir: path.resolve(__dirname, &#x27;./uploads&#x27;),
++   staticDir: path.resolve(dirname, &#x27;../uploads&#x27;),
+  },
+}
+</code></pre>
+</li>
+<li>
+<p>The <code>upload.staticURL</code> property has been removed. If you were using this format URLs when using an external provider, you can leverage the <code>generateFileURL</code> functions in order to do the same.</p>
+<pre><code class="language-diff">// collections/Media.ts
+import type { CollectionConfig } from &#x27;payload&#x27;
+
+export const MediaCollection: CollectionConfig = {
+  slug: &#x27;media&#x27;,
+  upload: {
+-   staticURL: &#x27;&#x27;,
+  },
+}
+</code></pre>
+</li>
+<li>
+<p>The <code>admin.favicon</code> property is now <code>admin.icons</code> and the types have changed:</p>
+<pre><code class="language-diff">// payload.config.ts
+import { buildConfig } from &#x27;payload&#x27;
+
+const config = buildConfig({
+  // ...
+  admin: {
+-   favicon: &#x27;path-to-favicon.svg&#x27;,
++   icons: [{
++     path: &#x27;path-to-favicon.svg&#x27;,
++     sizes: &#x27;32x32&#x27;
++   }]
+  }
+})
+</code></pre>
+<p>For more details, see the <a href="https://payloadcms.com/docs/admin/metadata#icons">Documentation</a>.</p>
+</li>
+<li>
+<p>The <code>admin.meta.ogImage</code> property has been replaced by <code>admin.meta.openGraph.images</code>:</p>
+<pre><code class="language-diff">// payload.config.ts
+import { buildConfig } from &#x27;payload&#x27;
+
+const config = buildConfig({
+  // ...
+  admin: {
+    meta: {
+-     ogImage: &#x27;&#x27;,
++     openGraph: {
++       images: []
++     }
+    }
+  }
+})
+</code></pre>
+<p>For more details, see the <a href="https://payloadcms.com/docs/admin/metadata#open-graph">Documentation</a>.</p>
+</li>
+<li>
+<p>The args of the <code>admin.livePreview.url</code> function have changed. It no longer receives <code>documentInfo</code> as an arg, and instead, now has <code>collectionConfig</code> and <code>globalConfig</code>.</p>
+<pre><code class="language-diff">// payload.config.ts
+import { buildConfig } from &#x27;payload&#x27;
+
+export default buildConfig({
+  // ...
+  admin: {
+    // ...
+    livePreview: ({
+-     documentInfo,
++     collectionConfig,
++     globalConfig
+    }) =&gt; &#x27;&#x27;
+  }
+})
+</code></pre>
+</li>
+<li>
+<p>The <code>admin.logoutRoute</code> and <code>admin.inactivityRoute</code> properties have been consolidated into a single <code>admin.routes</code> property. To migrate, simply move those two keys as follows:</p>
+<pre><code class="language-diff">// payload.config.ts
+import { buildConfig } from &#x27;payload&#x27;
+
+const config = buildConfig({
+  // ...
+  admin: {
+-   logoutRoute: &#x27;/custom-logout&#x27;,
++   inactivityRoute: &#x27;/custom-inactivity&#x27;
++   routes: {
++     logout: &#x27;/custom-logout&#x27;,
++     inactivity: &#x27;/custom-inactivity&#x27;
++   }
+  }
+})
+</code></pre>
+</li>
+<li>
+<p>The <code>custom</code> property in the Payload Config, i.e. Collections, Globals, and Fields is now <strong>server only</strong> and will <strong>not</strong> appear in the client-side bundle. To add custom properties to the client bundle, use the new <code>admin.custom</code> property, which will be available on <em>both</em> the server and the client.</p>
+<pre><code class="language-diff">// payload.config.ts
+import { buildConfig } from &#x27;payload&#x27;
+
+export default buildConfig({
+  custom: {
+    someProperty: &#x27;My Server Prop&#x27; // Now server only!
+  },
+  admin: {
++   custom: {
++     name: &#x27;My Client Prop&#x27; // Available in server AND client
++   }
+  },
+})
+</code></pre>
+</li>
+<li>
+<p><code>hooks.afterError</code> is now an array of functions instead of a single function. The args have also been expanded. Read <a href="https://payloadcms.com/docs/hooks/overview#root-hooks">More</a>.</p>
+<pre><code class="language-diff">// payload.config.ts
+import { buildConfig } from &#x27;payload&#x27;
+
+export default buildConfig({
+  hooks: {
+-   afterError: async ({ error }) =&gt; {
++   afterError: [
++     async ({ error, req, res }) =&gt; {
++       // ...
++     }
++   ]
+  }
+})
+</code></pre>
+</li>
+<li>
+<p>The <code>./src/public</code> directory is now located directly at root level <code>./public</code> <a href="https://nextjs.org/docs/pages/building-your-application/optimizing/static-assets">see Next.js docs for details</a></p>
+</li>
+<li>
+<p>Payload now automatically removes <code>localized: true</code> property from sub-fields if a parent is localized, as it&#x27;s redunant and unnecessary. If you have some existing data in this structure and you want to disable that behavior, you need to enable <code>allowLocalizedWithinLocalized</code> flag in your payload.config <a href="https://payloadcms.com/docs/configuration/overview#compatibility-flags">read more in documentation</a>, or create a migration script that aligns your data.
+Mongodb example for a link in a page layout.</p>
+<pre><code class="language-diff">- layout.columns.en.link.en.type.en
++ layout.columns.en.link.type
+</code></pre>
+</li>
+</ol>
+<h2>Custom Components</h2>
+<ol>
+<li>
+<p>All Payload React components have been moved from the <code>payload</code> package to <code>@payloadcms/ui</code>. If you were previously importing components into your app from the <code>payload</code> package, for example to create Custom Components, you will need to change your import paths:</p>
+<pre><code class="language-diff">- import { TextField, useField, etc. } from &#x27;payload&#x27;
++ import { TextField, useField, etc. } from &#x27;@payloadcms/ui&#x27;
+</code></pre>
+<p><em>Note: for brevity, not <em>all</em> modules are listed here</em></p>
+</li>
+<li>
+<p>All Custom Components are now defined as <em>file paths</em> instead of direct imports. If you are using Custom Components in your Payload Config, remove the imported module and point to the file&#x27;s path instead:</p>
+<pre><code class="language-diff">import { buildConfig } from &#x27;payload&#x27;
+- import { MyComponent } from &#x27;./src/components/Logout&#x27;
+
+const config = buildConfig({
+  // ...
+  admin: {
+    components: {
+      logout: {
+-       Button: MyComponent,
++       Button: &#x27;/src/components/Logout#MyComponent&#x27;
+      }
+    }
+  },
+})
+</code></pre>
+<p>For more details, see the <a href="https://payloadcms.com/docs/custom-components/overview#component-paths">Documentation</a>.</p>
+</li>
+<li>
+<p>All Custom Components are now server-rendered by default, and therefore, cannot use state or hooks directly. If you’re using Custom Components in your app that requires state or hooks, add the <code>&#x27;use client&#x27;</code> directive at the top of the file.</p>
+<pre><code class="language-diff">// components/MyClientComponent.tsx
++ &#x27;use client&#x27;
+import React, { useState } from &#x27;react&#x27;
+
+export const MyClientComponent = () =&gt; {
+  const [state, setState] = useState()
+
+  return (
+    &lt;div&gt;
+      {state}
+    &lt;/div&gt;
+  )
+}
+</code></pre>
+<p>For more details, see the <a href="https://payloadcms.com/docs/custom-components/overview#client-components">Documentation</a>.</p>
+</li>
+<li>
+<p>The <code>admin.description</code> property within Collection, Globals, and Fields no longer accepts a React Component. Instead, you must define it as a Custom Component.</p>
+<ol>
+<li>For Collections, use the <code>admin.components.edit.Description</code> key:</li>
+</ol>
+<pre><code class="language-diff">// collections/Posts.ts
+import type { CollectionConfig } from &#x27;payload&#x27;
+- import { MyCustomDescription } from &#x27;../components/MyCustomDescription&#x27;
+
+export const PostsCollection: CollectionConfig = {
+  slug: &#x27;posts&#x27;,
+  admin: {
+-    description: MyCustomDescription,
++    components: {
++      edit: {
++        Description: &#x27;path/to/MyCustomDescription&#x27;
++      }
++    }
+  }
+}
+</code></pre>
+<ol start="2">
+<li>For Globals, use the <code>admin.components.elements.Description</code> key:</li>
+</ol>
+<pre><code class="language-diff">// globals/Site.ts
+import type { GlobalConfig } from &#x27;payload&#x27;
+- import { MyCustomDescription } from &#x27;../components/MyCustomDescription&#x27;
+
+export const SiteGlobal: GlobalConfig = {
+  slug: &#x27;site&#x27;,
+  admin: {
+-    description: MyCustomDescription,
++    components: {
++      elements: {
++        Description: &#x27;path/to/MyCustomDescription&#x27;
++      }
++    }
+  }
+}
+</code></pre>
+<ol start="3">
+<li>For Fields, use the <code>admin.components.Description</code> key:</li>
+</ol>
+<pre><code class="language-diff">// fields/MyField.ts
+import type { FieldConfig } from &#x27;payload&#x27;
+- import { MyCustomDescription } from &#x27;../components/MyCustomDescription&#x27;
+
+export const MyField: FieldConfig = {
+  type: &#x27;text&#x27;,
+  admin: {
+-    description: MyCustomDescription,
++    components: {
++      Description: &#x27;path/to/MyCustomDescription&#x27;
++    }
+  }
+}
+</code></pre>
+</li>
+<li>
+<p>Array Field row labels and Collapsible Field label now <em>only</em> accepts a React Component, and no longer accepts a plain string or record:</p>
+<pre><code class="language-diff">// file: Collection.tsx
+import type { CollectionConfig } from &#x27;payload&#x27;
+- import { MyCustomRowLabel } from &#x27;./components/MyCustomRowLabel.tsx&#x27;
+
+export const MyCollection: CollectionConfig = {
+  slug: &#x27;my-collection&#x27;,
+  fields: [
+    {
+      name: &#x27;my-array&#x27;,
+      type: &#x27;array&#x27;,
+      admin: {
+        components: {
+-         RowLabel: &#x27;My Array Row Label,
++         RowLabel: &#x27;./components/RowLabel.ts&#x27;
+        }
+      },
+      fields: [...]
+    },
+    {
+      name: &#x27;my-collapsible&#x27;,
+      type: &#x27;collapsible&#x27;,
+      admin: {
+        components: {
+-         Label: &#x27;My Collapsible Label&#x27;,
++         Label: &#x27;./components/RowLabel.ts&#x27;
+        }
+      },
+      fields: [...]
+    }
+  ]
+}
+</code></pre>
+</li>
+<li>
+<p>All default view keys are now camelcase:</p>
+<p>For example, for Root Views:</p>
+<pre><code class="language-diff">// file: payload.config.ts
+
+import { buildConfig } from &#x27;payload&#x27;
+
+export default buildConfig({
+admin: {
+  views: {
+-    Account: ...
++    account: ...
+  }
+})
+</code></pre>
+<p>Or Document Views:</p>
+<pre><code class="language-diff">// file: Collection.tsx
+
+import type { CollectionConfig } from &#x27;payload&#x27;
+
+export const MyCollection: CollectionConfig = {
+  slug: &#x27;my-collection&#x27;,
+  admin: {
+    views: {
+-     Edit: {
+-       Default: ...
+-     }
++     edit: {
++       default: ...
++     }
+    }
+  }
+}
+</code></pre>
+</li>
+<li>
+<p>Custom Views within the config no longer accept React Components directly, instead, you must use their <code>Component</code> property:</p>
+<pre><code class="language-diff">// file: Collection.tsx
+import type { CollectionConfig } from &#x27;payload&#x27;
+- import { MyCustomView } from &#x27;./components/MyCustomView.tsx&#x27;
+
+export const MyCollection: CollectionConfig = {
+  slug: &#x27;my-collection&#x27;,
+  admin: {
+    views: {
+-     Edit: MyCustomView
++     edit: {
++       Component: &#x27;./components/MyCustomView.tsx&#x27;
++     }
+    }
+  }
+}
+</code></pre>
+<p>This also means that Custom Root Views are no longer defined on the <code>edit</code> key. Instead, use the new <code>views.root</code> key:</p>
+<pre><code class="language-diff">// file: Collection.tsx
+import type { CollectionConfig } from &#x27;payload&#x27;
+- import { MyCustomRootView } from &#x27;./components/MyCustomRootView.tsx&#x27;
+
+export const MyCollection: CollectionConfig = {
+  slug: &#x27;my-collection&#x27;,
+  admin: {
+    views: {
+-     Edit: MyCustomRootView
+      edit: {
++       root: {
++         Component: &#x27;./components/MyCustomRootView.tsx&#x27;
++       }
+      }
+    }
+  }
+}
+</code></pre>
+</li>
+<li>
+<p>The <code>href</code> and <code>isActive</code> functions on View Tabs no longer includes the <code>match</code> or <code>location</code> arguments. This is is a property specific to React Router, not Next.js. If you need to do URL matching similar to this, use a custom tab that fires of some hooks, i.e. <code>usePathname()</code> and run it through your own utility functions:</p>
+<pre><code class="language-diff">// collections/Posts.ts
+import type { CollectionConfig } from &#x27;payload&#x27;
+
+export const PostsCollection: CollectionConfig = {
+  slug: &#x27;posts&#x27;,
+  admin: {
+    components: {
+      views: {
+-        Edit: {
+-          Tab: {
+-            isActive: ({ href, location, match }) =&gt; true,
+-            href: ({ href, location, match }) =&gt; &#x27;&#x27;
+-          },
+-       },
++       edit: {
++         tab: {
++           isActive: ({ href }) =&gt; true,
++           href: ({ href }) =&gt; &#x27;&#x27; // or use a Custom Component (see below)
++           // Component: &#x27;./path/to/CustomComponent.tsx&#x27;
++         }
++       },
+      },
+    },
+  },
+}
+</code></pre>
+</li>
+<li>
+<p>The <code>admin.components.views[key].Tab.pillLabel</code> has been replaced with <code>admin.components.views[key].tab.Pill</code>:</p>
+<pre><code class="language-diff">// collections/Posts.ts
+import type { CollectionConfig } from &#x27;payload&#x27;
+
+export const PostsCollection: CollectionConfig = {
+  slug: &#x27;posts&#x27;,
+  admin: {
+    components: {
+-     views: {
+-       Edit: {
+-         Tab: {
+-           pillLabel: &#x27;Hello, world!&#x27;,
+-         },
+-       },
++       edit: {
++         tab: {
++           Pill: &#x27;./path/to/CustomPill.tsx&#x27;,
++         }
++       },
+      },
+    },
+  },
+}
+</code></pre>
+</li>
+<li>
+<p><code>react-i18n</code> was removed, the <code>Trans</code> component from <code>react-i18n</code> has been replaced with a Payload-provided solution:</p>
+<pre><code class="language-diff">&#x27;use client&#x27;
+- import { Trans } from &quot;react-i18n&quot;
++ import { Translation } from &quot;@payloadcms/ui&quot;
+
+// Example string to translate:
+// &quot;loggedInChangePassword&quot;: &quot;To change your password, go to your &lt;0&gt;account&lt;/0&gt; and edit your password there.&quot;
+
+export const MyComponent = () =&gt; {
+  return (
+-     &lt;Trans i18nKey=&quot;loggedInChangePassword&quot; t={t}&gt;
+-       &lt;Link to={`${admin}/account`}&gt;account&lt;/Link&gt;
+-     &lt;/Trans&gt;
+
++     &lt;Translation
++       t={t}
++       i18nKey=&quot;authentication:loggedInChangePassword&quot;
++       elements={{
++         &#x27;0&#x27;: ({ children }) =&gt; &lt;Link href={`${admin}/account`} children={children} /&gt;,
++       }}
++     /&gt;
+  )
+}
+</code></pre>
+</li>
+</ol>
+<h2>Endpoints</h2>
+<ol>
+<li>
+<p>All endpoint handlers have changed. The args no longer include <code>res</code>, and <code>next</code>, and the return type now expects a valid HTTP <a href="https://developer.mozilla.org/en-US/docs/Web/API/Response"><code>Response</code></a> instead of <code>res.json</code>, <code>res.send</code>, etc.:</p>
+<pre><code class="language-diff">// collections/Posts.ts
+import type { CollectionConfig } from &#x27;payload&#x27;
+
+export const PostsCollection: CollectionConfig = {
+  slug: &#x27;posts&#x27;,
+  endpoints: [
+-   {
+-     path: &#x27;/whoami/:parameter&#x27;,
+-     method: &#x27;post&#x27;,
+-     handler: (req, res) =&gt; {
+-       res.json({
+-         parameter: req.params.parameter,
+-         name: req.body.name,
+-         age: req.body.age,
+-       })
+-     }
+-   },
++   {
++     path: &#x27;/whoami/:parameter&#x27;,
++     method: &#x27;post&#x27;,
++     handler: (req) =&gt; {
++       return Response.json({
++         parameter: req.routeParams.parameter,
++         // ^^ `params` is now `routeParams`
++         name: req.data.name,
++         age: req.data.age,
++       })
++     }
++   }
+  ]
+}
+</code></pre>
+</li>
+<li>
+<p>Endpoint handlers no longer resolves <code>data</code>, <code>locale</code>, or <code>fallbackLocale</code> for you on the request. Instead, you must resolve them yourself or use the Payload-provided utilities:</p>
+<pre><code class="language-diff">// collections/Posts.ts
+import type { CollectionConfig } from &#x27;payload&#x27;
++ import { addDataAndFileToRequest } from &#x27;@payloadcms/next/utilities&#x27;
++ import { addLocalesToRequest } from &#x27;@payloadcms/next/utilities&#x27;
+
+export const PostsCollection: CollectionConfig = {
+  slug: &#x27;posts&#x27;,
+  endpoints: [
+-   {
+-     path: &#x27;/whoami/:parameter&#x27;,
+-     method: &#x27;post&#x27;,
+-     handler: async (req) =&gt; {
+-       return Response.json({
+-         name: req.data.name, // data will be undefined
+-       })
+-     }
+-   },
++   {
++     path: &#x27;/whoami/:parameter&#x27;,
++     method: &#x27;post&#x27;,
++     handler: async (req) =&gt; {
++       // mutates req, must be awaited
++       await addDataAndFileToRequest(req)
++       await addLocalesToRequest(req)
++
++       return Response.json({
++         name: req.data.name, // data is now available
++    	    fallbackLocale: req.fallbackLocale,
++         locale: req.locale,
++       })
++     }
++   }
+  ]
+}
+</code></pre>
+</li>
+</ol>
+<h2>React Hooks</h2>
+<ol>
+<li>
+<p>The <code>useTitle</code> hook has been consolidated into the <code>useDocumentInfo</code> hook. Instead, you can get title directly from document info context:</p>
+<pre><code class="language-diff">&#x27;use client&#x27;
+- import { useTitle } from &#x27;payload&#x27;
++ import { useDocumentInfo } from &#x27;@payloadcms/ui&#x27;
+
+export const MyComponent = () =&gt; {
+- const title = useTitle()
++ const { title } = useDocumentInfo()
+
+  // ...
+}
+</code></pre>
+</li>
+<li>
+<p>The <code>useDocumentInfo</code> hook no longer returns <code>collection</code> or <code>global</code>. Instead, various properties of the config are passed, like <code>collectionSlug</code> and <code>globalSlug</code>. You can use these to access a client-side config, if needed, through the <code>useConfig</code> hook (see next bullet).</p>
+<pre><code class="language-diff">&#x27;use client&#x27;
+import { useDocumentInfo } from &#x27;@payloadcms/ui&#x27;
+
+export const MyComponent = () =&gt; {
+  const {
+-   collection,
+-   global,
++   collectionSlug,
++   globalSlug
+  } = useDocumentInfo()
+
+  // ...
+}
+</code></pre>
+</li>
+<li>
+<p>The <code>useConfig</code> hook now returns a <code>ClientConfig</code> and not a <code>SanitizedConfig</code>. This is because the config itself is not serializable and so it is not able to be thread through to the client. This means that all non-serializable props have been omitted from the Client Config, such as <code>db</code>, <code>bundler</code>, etc.</p>
+<pre><code class="language-diff">&#x27;use client&#x27;
+- import { useConfig } from &#x27;payload&#x27;
++ import { useConfig } from &#x27;@payloadcms/ui&#x27;
+
+export const MyComponent = () =&gt; {
+- const config = useConfig() // used to be a &#x27;SanitizedConfig&#x27;
++ const { config } = useConfig() // now is a &#x27;ClientConfig&#x27;
+
+  // ...
+}
+</code></pre>
+<p>For more details, see the <a href="https://payloadcms.com/docs/admin/custom-components/overview#accessing-the-payload-config">Documentation</a>.</p>
+</li>
+<li>
+<p>The <code>useCollapsible</code> hook has had slight changes to its property names. <code>collapsed</code> is now <code>isCollapsed</code> and <code>withinCollapsible</code> is now <code>isWithinCollapsible</code>.</p>
+<pre><code class="language-diff">&#x27;use client&#x27;
+import { useCollapsible } from &#x27;@payloadcms/ui&#x27;
+
+export const MyComponent = () =&gt; {
+- const { collapsed, withinCollapsible } = useCollapsible()
++ const { isCollapsed, isWithinCollapsible } = useCollapsible()
+}
+</code></pre>
+</li>
+<li>
+<p>The <code>useTranslation</code> hook no longer takes any options, any translations using shorthand accessors will need to use the entire <code>group:key</code></p>
+<pre><code class="language-diff">&#x27;use client&#x27;
+- import { useTranslation } from &#x27;payload&#x27;
++ import { useTranslation } from &#x27;@payloadcms/ui&#x27;
+
+export const MyComponent = () =&gt; {
+- const { i18n, t } = useTranslation(&#x27;general&#x27;)
++ const { i18n, t } = useTranslation()
+
+- return &lt;p&gt;{t(&#x27;cancel&#x27;)}&lt;/p&gt;
++ return &lt;p&gt;{t(&#x27;general:cancel&#x27;)}&lt;/p&gt;
+}
+</code></pre>
+</li>
+</ol>
+<h2>Types</h2>
+<ol>
+<li>
+<p>The <code>Fields</code> type was renamed to <code>FormState</code> for improved semantics. If you were previously importing this type in your own application, simply change the import name:</p>
+<pre><code class="language-diff">- import type { Fields } from &#x27;payload&#x27;
++ import type { FormState } from &#x27;payload&#x27;
+</code></pre>
+</li>
+<li>
+<p>The <code>BlockField</code> and related types have been renamed to <code>BlocksField</code> for semantic accuracy.</p>
+<pre><code class="language-diff">- import type { BlockField, BlockFieldProps } from &#x27;payload&#x27;
++ import type { BlocksField, BlocksFieldProps } from &#x27;payload&#x27;
+</code></pre>
+</li>
+</ol>
+<h2>Email Adapters</h2>
+<p>Email functionality has been abstracted out into email adapters.</p>
+<ul>
+<li>All existing nodemailer functionality was abstracted into the <code>@payloadcms/email-nodemailer</code> package</li>
+<li>No longer configured with ethereal.email by default.</li>
+<li>Ability to pass email into the <code>init</code> function has been removed.</li>
+<li>Warning will be given on startup if email not configured. Any <code>sendEmail</code> call will simply log the To address and subject.</li>
+<li>A Resend adapter is now also available via the <code>@payloadcms/email-resend</code> package.</li>
+</ul>
+<h3>If you used the default email configuration in 2.0 (nodemailer):</h3>
+<pre><code class="language-tsx">// ❌ Before
+
+// via payload.init
+payload.init({
+  email: {
+    transport: someNodemailerTransport
+    fromName: &#x27;hello&#x27;,
+    fromAddress: &#x27;hello@example.com&#x27;,
+  },
+})
+// or via email in payload.config.ts
+export default buildConfig({
+  email: {
+    transport: someNodemailerTransport
+    fromName: &#x27;hello&#x27;,
+    fromAddress: &#x27;hello@example.com&#x27;,
+  },
+})
+
+// ✅ After
+
+// Using new nodemailer adapter package
+
+import { nodemailerAdapter } from &#x27;@payloadcms/email-nodemailer&#x27;
+
+export default buildConfig({
+  email: nodemailerAdapter() // This will be the old ethereal.email functionality
+})
+
+// or pass in transport
+
+export default buildConfig({
+  email: nodemailerAdapter({
+    defaultFromAddress: &#x27;info@payloadcms.com&#x27;,
+    defaultFromName: &#x27;Payload&#x27;,
+    transport: await nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: 587,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    })
+  })
+})
+</code></pre>
+<h3>Removal of rate-limiting</h3>
+<ul>
+<li>Now only available if using custom server and using express or similar</li>
+</ul>
+<h2>Plugins</h2>
+<ol>
+<li>
+<p><em>All</em> plugins have been standardized to use <em>named exports</em> (as opposed to default exports). Most also have a suffix of <code>Plugin</code> to make it clear what is being imported.</p>
+<pre><code class="language-diff">- import seo from &#x27;@payloadcms/plugin-seo&#x27;
++ import { seoPlugin } from &#x27;@payloadcms/plugin-seo&#x27;
+
+- import stripePlugin from &#x27;@payloadcms/plugin-stripe&#x27;
++ import { stripePlugin } from &#x27;@payloadcms/plugin-stripe&#x27;
+
+// and so on for every plugin
+</code></pre>
+</li>
+</ol>
+<h2><code>@payloadcms/plugin-cloud-storage</code></h2>
+<ul>
+<li>The adapters that are exported from <code>@payloadcms/plugin-cloud-storage</code> (ie. <code>@payloadcms/plugin-cloud-storage/s3</code>) package have been removed.</li>
+<li>New <em>standalone</em> packages have been created for each of the existing adapters. Please see the documentation for the one that you use.</li>
+<li><code>@payloadcms/plugin-cloud-storage</code> is still fully supported but should only to be used if you are providing a custom adapter that does not have a dedicated package.</li>
+<li>If you have created a custom adapter, the type must now provide a <code>name</code> property.</li>
+</ul>
+<div class="overflow-x-auto my-8"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr class="even:bg-gray-50"><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th><th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Package</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">Vercel Blob</td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><a href="https://github.com/payloadcms/payload/tree/main/packages/storage-vercel-blob">https://github.com/payloadcms/payload/tree/main/packages/storage-vercel-blob</a></td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">AWS S3</td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><a href="https://github.com/payloadcms/payload/tree/main/packages/storage-s3">https://github.com/payloadcms/payload/tree/main/packages/storage-s3</a></td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">Azure</td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><a href="https://github.com/payloadcms/payload/tree/main/packages/storage-azure">https://github.com/payloadcms/payload/tree/main/packages/storage-azure</a></td></tr><tr class="even:bg-gray-50"><td class="px-6 py-4 whitespace-normal text-sm text-gray-500">Google Cloud Storage</td><td class="px-6 py-4 whitespace-normal text-sm text-gray-500"><a href="https://github.com/payloadcms/payload/tree/main/packages/storage-gcs">https://github.com/payloadcms/payload/tree/main/packages/storage-gcs</a></td></tr></tbody></table></div>
+<pre><code class="language-tsx">// ❌ Before (required peer dependencies depending on adapter)
+
+import { cloudStorage } from &#x27;@payloadcms/plugin-cloud-storage&#x27;
+import { s3Adapter } from &#x27;@payloadcms/plugin-cloud-storage/s3&#x27;
+
+plugins: [
+    cloudStorage({
+      collections: {
+        media: {
+          adapter: s3Adapter({
+            bucket: process.env.S3_BUCKET,
+            config: {
+              credentials: {
+                accessKeyId: process.env.S3_ACCESS_KEY_ID,
+                secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
+              },
+              region: process.env.S3_REGION,
+            },
+          }),
+        },
+      },
+    }),
+  ],
+
+ // ✅ After
+
+ import { s3Storage } from &#x27;@payloadcms/storage-s3&#x27;
+
+ plugins: [
+    s3Storage({
+      collections: {
+        media: true,
+      },
+      bucket: process.env.S3_BUCKET,
+      config: {
+        credentials: {
+          accessKeyId: process.env.S3_ACCESS_KEY_ID,
+          secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
+        },
+        region: process.env.S3_REGION,
+      },
+    }),
+  ],
+</code></pre>
+<h2><code>@payloadcms/plugin-form-builder</code></h2>
+<ol>
+<li>
+<p>Field overrides for form and form submission collections now accept a function with a <code>defaultFields</code> inside the args instead of an array of config</p>
+<pre><code class="language-diff">// payload.config.ts
+import { buildConfig } from &#x27;payload&#x27;
+import { formBuilderPlugin } from &#x27;@payloadcms/plugin-form-builder&#x27;
+
+const config = buildConfig({
+  // ...
+  plugins: formBuilderPlugin({
+-   fields: [
+-     {
+-       name: &#x27;custom&#x27;,
+-       type: &#x27;text&#x27;,
+-     }
+-   ],
++   fields: ({ defaultFields }) =&gt; {
++     return [
++       ...defaultFields,
++       {
++         name: &#x27;custom&#x27;,
++         type: &#x27;text&#x27;,
++       },
++     ]
++   }
+  })
+})
+</code></pre>
+</li>
+</ol>
+<h2><code>@payloadcms/plugin-redirects</code></h2>
+<ol>
+<li>
+<p>Field overrides for the redirects collection now accepts a function with a <code>defaultFields</code> inside the args instead of an array of config</p>
+<pre><code class="language-diff">// payload.config.ts
+import { buildConfig } from &#x27;payload&#x27;
+import { redirectsPlugin } from &#x27;@payloadcms/plugin-redirects&#x27;
+
+const config = buildConfig({
+  // ...
+  plugins: redirectsPlugin({
+-   fields: [
+-     {
+-       name: &#x27;custom&#x27;,
+-       type: &#x27;text&#x27;,
+-     }
+-   ],
++   fields: ({ defaultFields }) =&gt; {
++     return [
++       ...defaultFields,
++       {
++         name: &#x27;custom&#x27;,
++         type: &#x27;text&#x27;,
++       },
++     ]
++   }
+  })
+})
+</code></pre>
+</li>
+</ol>
+<h2><code>@payloadcms/richtext-lexical</code></h2>
+<p>If you have custom features for <code>@payloadcms/richtext-lexical</code> you will need to migrate your code to the new API. Read more about the new API in the <a href="https://payloadcms.com/docs/rich-text/building-custom-features">documentation</a>.</p>
+<h2>Reserved Field names</h2>
+<p>Payload reserves certain field names for internal use. Using any of the following names in your collections or globals will result in those fields being sanitized from the config, which can cause deployment errors. Ensure that any conflicting fields are renamed before migrating.</p>
+<h3>General Reserved Names</h3>
+<ul>
+<li><code>file</code></li>
+<li><code>_id</code> (MongoDB only)</li>
+<li><code>__v</code> (MongoDB only)</li>
+</ul>
+<p><strong>Important Note</strong>: It is recommended to avoid using field names with an underscore (<code>_</code>) prefix unless explicitly required by a plugin. Payload uses this prefix for internal columns, which can lead to conflicts in certain SQL conditions. The following are examples of reserved internal columns (this list is not exhaustive and other internal fields may also apply):</p>
+<ul>
+<li><code>_order</code></li>
+<li><code>_path</code></li>
+<li><code>_uuid</code></li>
+<li><code>_parent_id</code></li>
+<li><code>_locale</code></li>
+</ul>
+<h3>Auth-Related Reserved Names</h3>
+<p>These are restricted if your collection uses <code>auth: true</code> and does not have <code>disableAuthStrategy: true</code>:</p>
+<ul>
+<li><code>salt</code></li>
+<li><code>hash</code></li>
+<li><code>apiKey</code> (when <code>auth.useAPIKey: true</code> is enabled)</li>
+<li><code>useAPIKey</code> (when <code>auth.useAPIKey: true</code> is enabled)</li>
+<li><code>resetPasswordToken</code></li>
+<li><code>resetPasswordExpiration</code></li>
+<li><code>password</code></li>
+<li><code>email</code></li>
+<li><code>username</code></li>
+</ul>
+<h3>Upload-Related Reserved Names</h3>
+<p>These apply if your collection has <code>upload: true</code> configured:</p>
+<ul>
+<li><code>filename</code></li>
+<li><code>mimetype</code></li>
+<li><code>filesize</code></li>
+<li><code>width</code></li>
+<li><code>height</code></li>
+<li><code>focalX</code></li>
+<li><code>focalY</code></li>
+<li><code>url</code></li>
+<li><code>thumbnailURL</code></li>
+</ul>
+<p>If <code>imageSizes</code> is configured, the following are also reserved:</p>
+<ul>
+<li><code>sizes</code></li>
+</ul>
+<p>If any of these names are found in your collection / global fields, update them before migrating to avoid unexpected issues.</p>
+<h2>Upgrade from previous beta</h2>
+<p>Reference this <a href="https://payload-releases-filter.vercel.app/?version=3&amp;from=152429656&amp;to=188243150&amp;sort=asc&amp;breaking=on">community-made site</a>. Set your version, sort by oldest first, enable breaking changes only.</p>
+<p>Then go through each one of the breaking changes and make the adjustments. You can optionally reference the <a href="https://github.com/payloadcms/payload/tree/main/templates/blank">blank template</a> for how things should end up.</p></div></div></div><script id="__NEXT_DATA__" type="application/json" crossorigin="">{"props":{"pageProps":{"frontMatter":{"title":"2.0 to 3.0 Migration Guide","label":"2.0 to 3.0 Migration Guide","order":10,"desc":"Upgrade guide for Payload 2.x projects migrating to 3.0.","keywords":"local api, config, configuration, documentation, Content Management System, cms, headless, javascript, node, react"},"content":{"compiledSource":"/*@jsxRuntime automatic @jsxImportSource react*/\nconst {Fragment: _Fragment, jsx: _jsx, jsxs: _jsxs} = arguments[0];\nconst {useMDXComponents: _provideComponents} = arguments[0];\nfunction _createMdxContent(props) {\n  const _components = Object.assign({\n    h1: \"h1\",\n    p: \"p\",\n    em: \"em\",\n    a: \"a\",\n    h2: \"h2\",\n    h3: \"h3\",\n    ul: \"ul\",\n    li: \"li\",\n    code: \"code\",\n    pre: \"pre\",\n    ol: \"ol\",\n    strong: \"strong\",\n    table: \"table\",\n    thead: \"thead\",\n    tr: \"tr\",\n    th: \"th\",\n    tbody: \"tbody\",\n    td: \"td\"\n  }, _provideComponents(), props.components);\n  return _jsxs(_Fragment, {\n    children: [_jsx(_components.h1, {\n      children: \"Payload 2.0 to 3.0 Migration Guide\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Payload 3.0 completely replatforms the Admin Panel from a React Router single-page application onto the Next.js App Router with full support for React Server Components. This change completely separates Payload \\\"core\\\" from its rendering and HTTP layers, making it truly Node-safe and portable.\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"If you are upgrading from a \", _jsx(_components.em, {\n        children: \"previous beta\"\n      }), \", please see the \", _jsx(_components.a, {\n        href: \"#upgrade-from-previous-beta\",\n        children: \"Upgrade From Previous Beta\"\n      }), \" section.\"]\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"What has changed?\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"The core logic and principles of Payload remain the same from 2.0 to 3.0, with the majority of changes affecting specifically the HTTP layer and the Admin Panel, which is now built upon Next.js. With this change, your entire application can be served within a single repo, with Payload endpoints are now opened within your own Next.js application, directly alongside your frontend. Payload is still headless, you will still be able to leverage it completely headlessly just as you do now with Sveltekit, etc. All Payload APIs remain exactly the same (with a few new features), and the Payload Config is generally the same, with the breaking changes detailed below.\"\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Table of Contents\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"All breaking changes are listed below. If you encounter changes that are not explicitly listed here, please consider contributing to this documentation by submitting a PR.\"\n    }), \"\\n\", _jsxs(_components.ul, {\n      children: [\"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.a, {\n          href: \"#installation\",\n          children: \"Installation\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.a, {\n          href: \"#breaking-changes\",\n          children: \"Breaking Changes\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.a, {\n          href: \"#custom-components\",\n          children: \"Custom Components\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.a, {\n          href: \"#endpoints\",\n          children: \"Endpoints\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.a, {\n          href: \"#react-hooks\",\n          children: \"React Hooks\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.a, {\n          href: \"#types\",\n          children: \"Types\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.a, {\n          href: \"#email-adapters\",\n          children: \"Email Adapters\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.a, {\n          href: \"#plugins\",\n          children: \"Plugins\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.a, {\n          href: \"#upgrade-from-previous-beta\",\n          children: \"Upgrade From Previous Beta\"\n        })\n      }), \"\\n\"]\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"Installation\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Payload 3.0 requires a set of auto-generated files that you will need to bring into your existing project. The easiest way of acquiring these is by initializing a new project via \", _jsx(_components.code, {\n        children: \"create-payload-app\"\n      }), \", then replace the provided Payload Config with your own.\"]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-bash\",\n        children: \"  npx create-payload-app\\n\"\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"For more details, see the \", _jsx(_components.a, {\n        href: \"https://payloadcms.com/docs/getting-started/installation\",\n        children: \"Documentation\"\n      }), \".\"]\n    }), \"\\n\", _jsxs(_components.ol, {\n      children: [\"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [_jsx(_components.strong, {\n            children: \"Install new dependencies of Payload, Next.js and React\"\n          }), \":\"]\n        }), \"\\n\", _jsx(_components.p, {\n          children: \"Refer to the package.json file made in the create-payload-app, including peerDependencies, devDependencies, and dependencies. The core package and plugins require all versions to be synced. Previously, on 2.x it was possible to be running the latest version of Payload 2.x with an older version of db-mongodb for example. This is no longer the case.\"\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-bash\",\n            children: \"  pnpm i next react react-dom payload @payloadcms/ui @payloadcms/next\\n\"\n          })\n        }), \"\\n\", _jsx(_components.p, {\n          children: \"Also install the other @payloadcms packages specific to the plugins and adapters you are using. Depending on your project, these may include:\"\n        }), \"\\n\", _jsxs(_components.ul, {\n          children: [\"\\n\", _jsx(_components.li, {\n            children: \"@payloadcms/db-mongodb\"\n          }), \"\\n\", _jsx(_components.li, {\n            children: \"@payloadcms/db-postgres\"\n          }), \"\\n\", _jsx(_components.li, {\n            children: \"@payloadcms/richtext-slate\"\n          }), \"\\n\", _jsx(_components.li, {\n            children: \"@payloadcms/richtext-lexical\"\n          }), \"\\n\", _jsx(_components.li, {\n            children: \"@payloadcms/plugin-form-builder\"\n          }), \"\\n\", _jsx(_components.li, {\n            children: \"@payloadcms/plugin-nested-docs\"\n          }), \"\\n\", _jsx(_components.li, {\n            children: \"@payloadcms/plugin-redirects\"\n          }), \"\\n\", _jsx(_components.li, {\n            children: \"@payloadcms/plugin-relationship\"\n          }), \"\\n\", _jsx(_components.li, {\n            children: \"@payloadcms/plugin-search\"\n          }), \"\\n\", _jsx(_components.li, {\n            children: \"@payloadcms/plugin-sentry\"\n          }), \"\\n\", _jsx(_components.li, {\n            children: \"@payloadcms/plugin-seo\"\n          }), \"\\n\", _jsx(_components.li, {\n            children: \"@payloadcms/plugin-stripe\"\n          }), \"\\n\", _jsxs(_components.li, {\n            children: [\"@payloadcms/plugin-cloud-storage - Read \", _jsx(_components.a, {\n              href: \"#@payloadcms/plugin-cloud-storage\",\n              children: \"More\"\n            }), \".\"]\n          }), \"\\n\"]\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsx(_components.p, {\n          children: \"Uninstall deprecated packages:\"\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-bash\",\n            children: \"pnpm remove express nodemon @payloadcms/bundler-webpack @payloadcms/bundler-vite\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsx(_components.p, {\n          children: \"Database Adapter Migrations\"\n        }), \"\\n\", _jsxs(_components.p, {\n          children: [_jsx(_components.em, {\n            children: \"If you have existing data\"\n          }), \" and are using the MongoDB or Postgres adapters, you will need to run the database migrations to ensure your database schema is up-to-date.\"]\n        }), \"\\n\", _jsxs(_components.ul, {\n          children: [\"\\n\", _jsx(_components.li, {\n            children: _jsx(_components.a, {\n              href: \"https://github.com/payloadcms/payload/releases/tag/v3.0.0-beta.39\",\n              children: \"postgres\"\n            })\n          }), \"\\n\", _jsx(_components.li, {\n            children: _jsx(_components.a, {\n              href: \"https://github.com/payloadcms/payload/releases/tag/v3.0.0-beta.131\",\n              children: \"mongodb\"\n            })\n          }), \"\\n\"]\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsx(_components.p, {\n          children: \"For Payload Cloud users, the plugin has changed.\"\n        }), \"\\n\", _jsx(_components.p, {\n          children: \"Uninstall the old package:\"\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-bash\",\n            children: \"pnpm remove @payloadcms/plugin-cloud\\n\"\n          })\n        }), \"\\n\", _jsx(_components.p, {\n          children: \"Install the new package:\"\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-bash\",\n            children: \"pnpm i @payloadcms/payload-cloud\\n\"\n          })\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// payload.config.ts\\n- import { payloadCloud } from '@payloadcms/plugin-cloud'\\n+ import { payloadCloudPlugin } from '@payloadcms/payload-cloud'\\n\\nbuildConfig({\\n  // ...\\n  plugins: [\\n-   payloadCloud()\\n+   payloadCloudPlugin()\\n  ]\\n})\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [_jsx(_components.strong, {\n            children: \"Optional\"\n          }), \" sharp dependency\"]\n        }), \"\\n\", _jsxs(_components.p, {\n          children: [\"If you have upload enabled collections that use \", _jsx(_components.code, {\n            children: \"formatOptions\"\n          }), \", \", _jsx(_components.code, {\n            children: \"imageSizes\"\n          }), \", or \", _jsx(_components.code, {\n            children: \"resizeOptions\"\n          }), \"—payload expects to have \", _jsx(_components.code, {\n            children: \"sharp\"\n          }), \" installed. In 2.0 this was a dependency was installed for you. Now it is only installed if needed. If you have any of these options set, you will need to install \", _jsx(_components.code, {\n            children: \"sharp\"\n          }), \" and add it to your payload.config.ts:\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-bash\",\n            children: \"pnpm i sharp\\n\"\n          })\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// payload.config.ts\\nimport sharp from 'sharp'\\nbuildConfig({\\n// ...\\n+   sharp,\\n})\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\"]\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"Breaking Changes\"\n    }), \"\\n\", _jsxs(_components.ol, {\n      children: [\"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"Delete the \", _jsx(_components.code, {\n            children: \"admin.bundler\"\n          }), \" property from your Payload Config. Payload no longer bundles the Admin Panel. Instead, we rely directly on Next.js for bundling.\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// payload.config.ts\\n- import { webpackBundler } from '@payloadcms/bundler-webpack'\\n\\nbuildConfig({\\n  // ...\\n  admin: {\\n    // ...\\n-   bundler: webpackBundler(),\\n  }\\n})\\n\"\n          })\n        }), \"\\n\", _jsxs(_components.p, {\n          children: [\"This also means that the \", _jsx(_components.code, {\n            children: \"@payloadcms/bundler-webpack\"\n          }), \" and \", _jsx(_components.code, {\n            children: \"@payloadcms/bundler-vite\"\n          }), \" packages have been deprecated. You can completely uninstall those from your project by removing them from your \", _jsx(_components.code, {\n            children: \"package.json\"\n          }), \" file and re-running your package manager’s installation process, i.e. \", _jsx(_components.code, {\n            children: \"pnpm i\"\n          }), \".\"]\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"Add the \", _jsx(_components.code, {\n            children: \"secret\"\n          }), \" property to your Payload Config. This used to be set in the \", _jsx(_components.code, {\n            children: \"payload.init()\"\n          }), \" function of your \", _jsx(_components.code, {\n            children: \"server.ts\"\n          }), \" file. Instead, move it to \", _jsx(_components.code, {\n            children: \"payload.config.ts\"\n          }), \":\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// payload.config.ts\\n\\nbuildConfig({\\n  // ...\\n+ secret: process.env.PAYLOAD_SECRET\\n})\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"Environment variables prefixed with \", _jsx(_components.code, {\n            children: \"PAYLOAD_PUBLIC\"\n          }), \" will no longer be available on the client. In order to access them on the client, those will now have to be prefixed with \", _jsx(_components.code, {\n            children: \"NEXT_PUBLIC\"\n          }), \" instead.\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"'use client'\\n- const var = process.env.PAYLOAD_PUBLIC_MY_ENV_VAR\\n+ const var = process.env.NEXT_PUBLIC_MY_ENV_VAR\\n\"\n          })\n        }), \"\\n\", _jsxs(_components.p, {\n          children: [\"For more details, see the \", _jsx(_components.a, {\n            href: \"https://payloadcms.com/docs/configuration/environment-vars\",\n            children: \"Documentation\"\n          }), \".\"]\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"The \", _jsx(_components.code, {\n            children: \"req\"\n          }), \" object used to extend the \", _jsx(_components.a, {\n            href: \"https://expressjs.com/\",\n            children: \"Express Request\"\n          }), \", but now extends the \", _jsx(_components.a, {\n            href: \"https://developer.mozilla.org/en-US/docs/Web/API/Request\",\n            children: \"Web Request\"\n          }), \". You may need to update your code accordingly to reflect this change. For example:\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"- req.headers['content-type']\\n+ req.headers.get('content-type')\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"The \", _jsx(_components.code, {\n            children: \"admin.css\"\n          }), \" and \", _jsx(_components.code, {\n            children: \"admin.scss\"\n          }), \" properties in the Payload Config have been removed.\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// payload.config.ts\\n\\nbuildConfig({\\n  // ...\\n  admin: {\\n    // ...\\n-   css: '',\\n-   scss: ''\\n  }\\n})\\n\"\n          })\n        }), \"\\n\", _jsx(_components.p, {\n          children: \"To migrate, choose one of the following options:\"\n        }), \"\\n\", _jsxs(_components.ol, {\n          children: [\"\\n\", _jsxs(_components.li, {\n            children: [\"\\n\", _jsxs(_components.p, {\n              children: [\"For most use cases, you can simply customize the file located at \", _jsx(_components.code, {\n                children: \"(payload)/custom.scss\"\n              }), \". You can import or add your own styles here, such as for Tailwind.\"]\n            }), \"\\n\"]\n          }), \"\\n\", _jsxs(_components.li, {\n            children: [\"\\n\", _jsxs(_components.p, {\n              children: [\"For plugins author, you can use a Custom Provider at \", _jsx(_components.code, {\n                children: \"admin.components.providers\"\n              }), \" to import your stylesheet:\"]\n            }), \"\\n\", _jsx(_components.pre, {\n              children: _jsx(_components.code, {\n                className: \"language-tsx\",\n                children: \"// payload.config.js\\n\\n//...\\nadmin: {\\n  components: {\\n    providers: [\\n      MyProvider: './providers/MyProvider.tsx'\\n    ]\\n  }\\n},\\n//...\\n\\n// providers/MyProvider.tsx\\n\\n'use client'\\nimport React from 'react'\\nimport './globals.css'\\n\\nexport const MyProvider: React.FC\u003c{children?: any}= ({ children }) ={\\n  return (\\n    \u003cReact.fragment\u003e\\n      {children}\\n    \u003c/React.fragment\u003e\\n  )\\n}\\n\"\n              })\n            }), \"\\n\"]\n          }), \"\\n\"]\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"The \", _jsx(_components.code, {\n            children: \"admin.indexHTML\"\n          }), \" property has been removed. Delete this from your Payload Config.\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// payload.config.ts\\n\\nbuildConfig({\\n  // ...\\n  admin: {\\n    // ...\\n-   indexHTML: ''\\n  }\\n})\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"The \", _jsx(_components.code, {\n            children: \"collection.admin.hooks\"\n          }), \" property has been removed. Instead, use the new \", _jsx(_components.code, {\n            children: \"beforeDuplicate\"\n          }), \" field-level hook which take the usual field hook arguments.\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// collections/Posts.ts\\nimport type { CollectionConfig } from 'payload'\\n\\nexport const PostsCollection: CollectionConfig = {\\n  slug: 'posts',\\n  admin: {\\n    hooks: {\\n-     beforeDuplicate: ({ data }) =\u003e {\\n-       return {\\n-         ...data,\\n-         title: `${data.title}-duplicate`\\n-       }\\n-     }\\n    }\\n  },\\n  fields: [\\n    {\\n      name: 'title',\\n      type: 'text',\\n      hooks: {\\n+      beforeDuplicate: [\\n+        ({ data }) =\u003e `${data.title}-duplicate`\\n+      ],\\n      },\\n    },\\n  ],\\n}\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"Fields with \", _jsx(_components.code, {\n            children: \"unique: true\"\n          }), \" now automatically be appended with “- Copy” through the new \", _jsx(_components.code, {\n            children: \"admin.beforeDuplicate\"\n          }), \" field hooks (see previous bullet).\"]\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"The \", _jsx(_components.code, {\n            children: \"upload.staticDir\"\n          }), \" property must now be an absolute path. Before it would attempt to use the location of the Payload Config and merge the relative path set for staticDir.\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// collections/Media.ts\\nimport type { CollectionConfig } from 'payload'\\nimport path from 'path'\\n+ import { fileURLToPath } from 'url'\\n\\n+ const filename = fileURLToPath(import.meta.url)\\n+ const dirname = path.dirname(filename)\\n\\nexport const MediaCollection: CollectionConfig = {\\n  slug: 'media',\\n  upload: {\\n-   staticDir: path.resolve(__dirname, './uploads'),\\n+   staticDir: path.resolve(dirname, '../uploads'),\\n  },\\n}\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"The \", _jsx(_components.code, {\n            children: \"upload.staticURL\"\n          }), \" property has been removed. If you were using this format URLs when using an external provider, you can leverage the \", _jsx(_components.code, {\n            children: \"generateFileURL\"\n          }), \" functions in order to do the same.\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// collections/Media.ts\\nimport type { CollectionConfig } from 'payload'\\n\\nexport const MediaCollection: CollectionConfig = {\\n  slug: 'media',\\n  upload: {\\n-   staticURL: '',\\n  },\\n}\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"The \", _jsx(_components.code, {\n            children: \"admin.favicon\"\n          }), \" property is now \", _jsx(_components.code, {\n            children: \"admin.icons\"\n          }), \" and the types have changed:\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// payload.config.ts\\nimport { buildConfig } from 'payload'\\n\\nconst config = buildConfig({\\n  // ...\\n  admin: {\\n-   favicon: 'path-to-favicon.svg',\\n+   icons: [{\\n+     path: 'path-to-favicon.svg',\\n+     sizes: '32x32'\\n+   }]\\n  }\\n})\\n\"\n          })\n        }), \"\\n\", _jsxs(_components.p, {\n          children: [\"For more details, see the \", _jsx(_components.a, {\n            href: \"https://payloadcms.com/docs/admin/metadata#icons\",\n            children: \"Documentation\"\n          }), \".\"]\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"The \", _jsx(_components.code, {\n            children: \"admin.meta.ogImage\"\n          }), \" property has been replaced by \", _jsx(_components.code, {\n            children: \"admin.meta.openGraph.images\"\n          }), \":\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// payload.config.ts\\nimport { buildConfig } from 'payload'\\n\\nconst config = buildConfig({\\n  // ...\\n  admin: {\\n    meta: {\\n-     ogImage: '',\\n+     openGraph: {\\n+       images: []\\n+     }\\n    }\\n  }\\n})\\n\"\n          })\n        }), \"\\n\", _jsxs(_components.p, {\n          children: [\"For more details, see the \", _jsx(_components.a, {\n            href: \"https://payloadcms.com/docs/admin/metadata#open-graph\",\n            children: \"Documentation\"\n          }), \".\"]\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"The args of the \", _jsx(_components.code, {\n            children: \"admin.livePreview.url\"\n          }), \" function have changed. It no longer receives \", _jsx(_components.code, {\n            children: \"documentInfo\"\n          }), \" as an arg, and instead, now has \", _jsx(_components.code, {\n            children: \"collectionConfig\"\n          }), \" and \", _jsx(_components.code, {\n            children: \"globalConfig\"\n          }), \".\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// payload.config.ts\\nimport { buildConfig } from 'payload'\\n\\nexport default buildConfig({\\n  // ...\\n  admin: {\\n    // ...\\n    livePreview: ({\\n-     documentInfo,\\n+     collectionConfig,\\n+     globalConfig\\n    }) =\u003e ''\\n  }\\n})\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"The \", _jsx(_components.code, {\n            children: \"admin.logoutRoute\"\n          }), \" and \", _jsx(_components.code, {\n            children: \"admin.inactivityRoute\"\n          }), \" properties have been consolidated into a single \", _jsx(_components.code, {\n            children: \"admin.routes\"\n          }), \" property. To migrate, simply move those two keys as follows:\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// payload.config.ts\\nimport { buildConfig } from 'payload'\\n\\nconst config = buildConfig({\\n  // ...\\n  admin: {\\n-   logoutRoute: '/custom-logout',\\n+   inactivityRoute: '/custom-inactivity'\\n+   routes: {\\n+     logout: '/custom-logout',\\n+     inactivity: '/custom-inactivity'\\n+   }\\n  }\\n})\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"The \", _jsx(_components.code, {\n            children: \"custom\"\n          }), \" property in the Payload Config, i.e. Collections, Globals, and Fields is now \", _jsx(_components.strong, {\n            children: \"server only\"\n          }), \" and will \", _jsx(_components.strong, {\n            children: \"not\"\n          }), \" appear in the client-side bundle. To add custom properties to the client bundle, use the new \", _jsx(_components.code, {\n            children: \"admin.custom\"\n          }), \" property, which will be available on \", _jsx(_components.em, {\n            children: \"both\"\n          }), \" the server and the client.\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// payload.config.ts\\nimport { buildConfig } from 'payload'\\n\\nexport default buildConfig({\\n  custom: {\\n    someProperty: 'My Server Prop' // Now server only!\\n  },\\n  admin: {\\n+   custom: {\\n+     name: 'My Client Prop' // Available in server AND client\\n+   }\\n  },\\n})\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [_jsx(_components.code, {\n            children: \"hooks.afterError\"\n          }), \" is now an array of functions instead of a single function. The args have also been expanded. Read \", _jsx(_components.a, {\n            href: \"https://payloadcms.com/docs/hooks/overview#root-hooks\",\n            children: \"More\"\n          }), \".\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// payload.config.ts\\nimport { buildConfig } from 'payload'\\n\\nexport default buildConfig({\\n  hooks: {\\n-   afterError: async ({ error }) =\u003e {\\n+   afterError: [\\n+     async ({ error, req, res }) =\u003e {\\n+       // ...\\n+     }\\n+   ]\\n  }\\n})\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"The \", _jsx(_components.code, {\n            children: \"./src/public\"\n          }), \" directory is now located directly at root level \", _jsx(_components.code, {\n            children: \"./public\"\n          }), \" \", _jsx(_components.a, {\n            href: \"https://nextjs.org/docs/pages/building-your-application/optimizing/static-assets\",\n            children: \"see Next.js docs for details\"\n          })]\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"Payload now automatically removes \", _jsx(_components.code, {\n            children: \"localized: true\"\n          }), \" property from sub-fields if a parent is localized, as it's redunant and unnecessary. If you have some existing data in this structure and you want to disable that behavior, you need to enable \", _jsx(_components.code, {\n            children: \"allowLocalizedWithinLocalized\"\n          }), \" flag in your payload.config \", _jsx(_components.a, {\n            href: \"https://payloadcms.com/docs/configuration/overview#compatibility-flags\",\n            children: \"read more in documentation\"\n          }), \", or create a migration script that aligns your data.\\nMongodb example for a link in a page layout.\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"- layout.columns.en.link.en.type.en\\n+ layout.columns.en.link.type\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\"]\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"Custom Components\"\n    }), \"\\n\", _jsxs(_components.ol, {\n      children: [\"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"All Payload React components have been moved from the \", _jsx(_components.code, {\n            children: \"payload\"\n          }), \" package to \", _jsx(_components.code, {\n            children: \"@payloadcms/ui\"\n          }), \". If you were previously importing components into your app from the \", _jsx(_components.code, {\n            children: \"payload\"\n          }), \" package, for example to create Custom Components, you will need to change your import paths:\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"- import { TextField, useField, etc. } from 'payload'\\n+ import { TextField, useField, etc. } from '@payloadcms/ui'\\n\"\n          })\n        }), \"\\n\", _jsx(_components.p, {\n          children: _jsxs(_components.em, {\n            children: [\"Note: for brevity, not \", _jsx(_components.em, {\n              children: \"all\"\n            }), \" modules are listed here\"]\n          })\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"All Custom Components are now defined as \", _jsx(_components.em, {\n            children: \"file paths\"\n          }), \" instead of direct imports. If you are using Custom Components in your Payload Config, remove the imported module and point to the file's path instead:\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"import { buildConfig } from 'payload'\\n- import { MyComponent } from './src/components/Logout'\\n\\nconst config = buildConfig({\\n  // ...\\n  admin: {\\n    components: {\\n      logout: {\\n-       Button: MyComponent,\\n+       Button: '/src/components/Logout#MyComponent'\\n      }\\n    }\\n  },\\n})\\n\"\n          })\n        }), \"\\n\", _jsxs(_components.p, {\n          children: [\"For more details, see the \", _jsx(_components.a, {\n            href: \"https://payloadcms.com/docs/custom-components/overview#component-paths\",\n            children: \"Documentation\"\n          }), \".\"]\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"All Custom Components are now server-rendered by default, and therefore, cannot use state or hooks directly. If you’re using Custom Components in your app that requires state or hooks, add the \", _jsx(_components.code, {\n            children: \"'use client'\"\n          }), \" directive at the top of the file.\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// components/MyClientComponent.tsx\\n+ 'use client'\\nimport React, { useState } from 'react'\\n\\nexport const MyClientComponent = () =\u003e {\\n  const [state, setState] = useState()\\n\\n  return (\\n    \u003cdiv\u003e\\n      {state}\\n    \u003c/div\u003e\\n  )\\n}\\n\"\n          })\n        }), \"\\n\", _jsxs(_components.p, {\n          children: [\"For more details, see the \", _jsx(_components.a, {\n            href: \"https://payloadcms.com/docs/custom-components/overview#client-components\",\n            children: \"Documentation\"\n          }), \".\"]\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"The \", _jsx(_components.code, {\n            children: \"admin.description\"\n          }), \" property within Collection, Globals, and Fields no longer accepts a React Component. Instead, you must define it as a Custom Component.\"]\n        }), \"\\n\", _jsxs(_components.ol, {\n          children: [\"\\n\", _jsxs(_components.li, {\n            children: [\"For Collections, use the \", _jsx(_components.code, {\n              children: \"admin.components.edit.Description\"\n            }), \" key:\"]\n          }), \"\\n\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// collections/Posts.ts\\nimport type { CollectionConfig } from 'payload'\\n- import { MyCustomDescription } from '../components/MyCustomDescription'\\n\\nexport const PostsCollection: CollectionConfig = {\\n  slug: 'posts',\\n  admin: {\\n-    description: MyCustomDescription,\\n+    components: {\\n+      edit: {\\n+        Description: 'path/to/MyCustomDescription'\\n+      }\\n+    }\\n  }\\n}\\n\"\n          })\n        }), \"\\n\", _jsxs(_components.ol, {\n          start: \"2\",\n          children: [\"\\n\", _jsxs(_components.li, {\n            children: [\"For Globals, use the \", _jsx(_components.code, {\n              children: \"admin.components.elements.Description\"\n            }), \" key:\"]\n          }), \"\\n\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// globals/Site.ts\\nimport type { GlobalConfig } from 'payload'\\n- import { MyCustomDescription } from '../components/MyCustomDescription'\\n\\nexport const SiteGlobal: GlobalConfig = {\\n  slug: 'site',\\n  admin: {\\n-    description: MyCustomDescription,\\n+    components: {\\n+      elements: {\\n+        Description: 'path/to/MyCustomDescription'\\n+      }\\n+    }\\n  }\\n}\\n\"\n          })\n        }), \"\\n\", _jsxs(_components.ol, {\n          start: \"3\",\n          children: [\"\\n\", _jsxs(_components.li, {\n            children: [\"For Fields, use the \", _jsx(_components.code, {\n              children: \"admin.components.Description\"\n            }), \" key:\"]\n          }), \"\\n\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// fields/MyField.ts\\nimport type { FieldConfig } from 'payload'\\n- import { MyCustomDescription } from '../components/MyCustomDescription'\\n\\nexport const MyField: FieldConfig = {\\n  type: 'text',\\n  admin: {\\n-    description: MyCustomDescription,\\n+    components: {\\n+      Description: 'path/to/MyCustomDescription'\\n+    }\\n  }\\n}\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"Array Field row labels and Collapsible Field label now \", _jsx(_components.em, {\n            children: \"only\"\n          }), \" accepts a React Component, and no longer accepts a plain string or record:\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// file: Collection.tsx\\nimport type { CollectionConfig } from 'payload'\\n- import { MyCustomRowLabel } from './components/MyCustomRowLabel.tsx'\\n\\nexport const MyCollection: CollectionConfig = {\\n  slug: 'my-collection',\\n  fields: [\\n    {\\n      name: 'my-array',\\n      type: 'array',\\n      admin: {\\n        components: {\\n-         RowLabel: 'My Array Row Label,\\n+         RowLabel: './components/RowLabel.ts'\\n        }\\n      },\\n      fields: [...]\\n    },\\n    {\\n      name: 'my-collapsible',\\n      type: 'collapsible',\\n      admin: {\\n        components: {\\n-         Label: 'My Collapsible Label',\\n+         Label: './components/RowLabel.ts'\\n        }\\n      },\\n      fields: [...]\\n    }\\n  ]\\n}\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsx(_components.p, {\n          children: \"All default view keys are now camelcase:\"\n        }), \"\\n\", _jsx(_components.p, {\n          children: \"For example, for Root Views:\"\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// file: payload.config.ts\\n\\nimport { buildConfig } from 'payload'\\n\\nexport default buildConfig({\\nadmin: {\\n  views: {\\n-    Account: ...\\n+    account: ...\\n  }\\n})\\n\"\n          })\n        }), \"\\n\", _jsx(_components.p, {\n          children: \"Or Document Views:\"\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// file: Collection.tsx\\n\\nimport type { CollectionConfig } from 'payload'\\n\\nexport const MyCollection: CollectionConfig = {\\n  slug: 'my-collection',\\n  admin: {\\n    views: {\\n-     Edit: {\\n-       Default: ...\\n-     }\\n+     edit: {\\n+       default: ...\\n+     }\\n    }\\n  }\\n}\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"Custom Views within the config no longer accept React Components directly, instead, you must use their \", _jsx(_components.code, {\n            children: \"Component\"\n          }), \" property:\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// file: Collection.tsx\\nimport type { CollectionConfig } from 'payload'\\n- import { MyCustomView } from './components/MyCustomView.tsx'\\n\\nexport const MyCollection: CollectionConfig = {\\n  slug: 'my-collection',\\n  admin: {\\n    views: {\\n-     Edit: MyCustomView\\n+     edit: {\\n+       Component: './components/MyCustomView.tsx'\\n+     }\\n    }\\n  }\\n}\\n\"\n          })\n        }), \"\\n\", _jsxs(_components.p, {\n          children: [\"This also means that Custom Root Views are no longer defined on the \", _jsx(_components.code, {\n            children: \"edit\"\n          }), \" key. Instead, use the new \", _jsx(_components.code, {\n            children: \"views.root\"\n          }), \" key:\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// file: Collection.tsx\\nimport type { CollectionConfig } from 'payload'\\n- import { MyCustomRootView } from './components/MyCustomRootView.tsx'\\n\\nexport const MyCollection: CollectionConfig = {\\n  slug: 'my-collection',\\n  admin: {\\n    views: {\\n-     Edit: MyCustomRootView\\n      edit: {\\n+       root: {\\n+         Component: './components/MyCustomRootView.tsx'\\n+       }\\n      }\\n    }\\n  }\\n}\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"The \", _jsx(_components.code, {\n            children: \"href\"\n          }), \" and \", _jsx(_components.code, {\n            children: \"isActive\"\n          }), \" functions on View Tabs no longer includes the \", _jsx(_components.code, {\n            children: \"match\"\n          }), \" or \", _jsx(_components.code, {\n            children: \"location\"\n          }), \" arguments. This is is a property specific to React Router, not Next.js. If you need to do URL matching similar to this, use a custom tab that fires of some hooks, i.e. \", _jsx(_components.code, {\n            children: \"usePathname()\"\n          }), \" and run it through your own utility functions:\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// collections/Posts.ts\\nimport type { CollectionConfig } from 'payload'\\n\\nexport const PostsCollection: CollectionConfig = {\\n  slug: 'posts',\\n  admin: {\\n    components: {\\n      views: {\\n-        Edit: {\\n-          Tab: {\\n-            isActive: ({ href, location, match }) =\u003e true,\\n-            href: ({ href, location, match }) =\u003e ''\\n-          },\\n-       },\\n+       edit: {\\n+         tab: {\\n+           isActive: ({ href }) =\u003e true,\\n+           href: ({ href }) =\u003e '' // or use a Custom Component (see below)\\n+           // Component: './path/to/CustomComponent.tsx'\\n+         }\\n+       },\\n      },\\n    },\\n  },\\n}\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"The \", _jsx(_components.code, {\n            children: \"admin.components.views[key].Tab.pillLabel\"\n          }), \" has been replaced with \", _jsx(_components.code, {\n            children: \"admin.components.views[key].tab.Pill\"\n          }), \":\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// collections/Posts.ts\\nimport type { CollectionConfig } from 'payload'\\n\\nexport const PostsCollection: CollectionConfig = {\\n  slug: 'posts',\\n  admin: {\\n    components: {\\n-     views: {\\n-       Edit: {\\n-         Tab: {\\n-           pillLabel: 'Hello, world!',\\n-         },\\n-       },\\n+       edit: {\\n+         tab: {\\n+           Pill: './path/to/CustomPill.tsx',\\n+         }\\n+       },\\n      },\\n    },\\n  },\\n}\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [_jsx(_components.code, {\n            children: \"react-i18n\"\n          }), \" was removed, the \", _jsx(_components.code, {\n            children: \"Trans\"\n          }), \" component from \", _jsx(_components.code, {\n            children: \"react-i18n\"\n          }), \" has been replaced with a Payload-provided solution:\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"'use client'\\n- import { Trans } from \\\"react-i18n\\\"\\n+ import { Translation } from \\\"@payloadcms/ui\\\"\\n\\n// Example string to translate:\\n// \\\"loggedInChangePassword\\\": \\\"To change your password, go to your \u003c0\u003eaccount\u003c/0\u003e and edit your password there.\\\"\\n\\nexport const MyComponent = () =\u003e {\\n  return (\\n-     \u003cTrans i18nKey=\\\"loggedInChangePassword\\\" t={t}\u003e\\n-       \u003cLink to={`${admin}/account`}\u003eaccount\u003c/Link\u003e\\n-     \u003c/Trans\u003e\\n\\n+     \u003cTranslation\\n+       t={t}\\n+       i18nKey=\\\"authentication:loggedInChangePassword\\\"\\n+       elements={{\\n+         '0': ({ children }) =\u003e \u003cLink href={`${admin}/account`} children={children} /\u003e,\\n+       }}\\n+     /\u003e\\n  )\\n}\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\"]\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"Endpoints\"\n    }), \"\\n\", _jsxs(_components.ol, {\n      children: [\"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"All endpoint handlers have changed. The args no longer include \", _jsx(_components.code, {\n            children: \"res\"\n          }), \", and \", _jsx(_components.code, {\n            children: \"next\"\n          }), \", and the return type now expects a valid HTTP \", _jsx(_components.a, {\n            href: \"https://developer.mozilla.org/en-US/docs/Web/API/Response\",\n            children: _jsx(_components.code, {\n              children: \"Response\"\n            })\n          }), \" instead of \", _jsx(_components.code, {\n            children: \"res.json\"\n          }), \", \", _jsx(_components.code, {\n            children: \"res.send\"\n          }), \", etc.:\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// collections/Posts.ts\\nimport type { CollectionConfig } from 'payload'\\n\\nexport const PostsCollection: CollectionConfig = {\\n  slug: 'posts',\\n  endpoints: [\\n-   {\\n-     path: '/whoami/:parameter',\\n-     method: 'post',\\n-     handler: (req, res) =\u003e {\\n-       res.json({\\n-         parameter: req.params.parameter,\\n-         name: req.body.name,\\n-         age: req.body.age,\\n-       })\\n-     }\\n-   },\\n+   {\\n+     path: '/whoami/:parameter',\\n+     method: 'post',\\n+     handler: (req) =\u003e {\\n+       return Response.json({\\n+         parameter: req.routeParams.parameter,\\n+         // ^^ `params` is now `routeParams`\\n+         name: req.data.name,\\n+         age: req.data.age,\\n+       })\\n+     }\\n+   }\\n  ]\\n}\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"Endpoint handlers no longer resolves \", _jsx(_components.code, {\n            children: \"data\"\n          }), \", \", _jsx(_components.code, {\n            children: \"locale\"\n          }), \", or \", _jsx(_components.code, {\n            children: \"fallbackLocale\"\n          }), \" for you on the request. Instead, you must resolve them yourself or use the Payload-provided utilities:\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// collections/Posts.ts\\nimport type { CollectionConfig } from 'payload'\\n+ import { addDataAndFileToRequest } from '@payloadcms/next/utilities'\\n+ import { addLocalesToRequest } from '@payloadcms/next/utilities'\\n\\nexport const PostsCollection: CollectionConfig = {\\n  slug: 'posts',\\n  endpoints: [\\n-   {\\n-     path: '/whoami/:parameter',\\n-     method: 'post',\\n-     handler: async (req) =\u003e {\\n-       return Response.json({\\n-         name: req.data.name, // data will be undefined\\n-       })\\n-     }\\n-   },\\n+   {\\n+     path: '/whoami/:parameter',\\n+     method: 'post',\\n+     handler: async (req) =\u003e {\\n+       // mutates req, must be awaited\\n+       await addDataAndFileToRequest(req)\\n+       await addLocalesToRequest(req)\\n+\\n+       return Response.json({\\n+         name: req.data.name, // data is now available\\n+    \\t    fallbackLocale: req.fallbackLocale,\\n+         locale: req.locale,\\n+       })\\n+     }\\n+   }\\n  ]\\n}\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\"]\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"React Hooks\"\n    }), \"\\n\", _jsxs(_components.ol, {\n      children: [\"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"The \", _jsx(_components.code, {\n            children: \"useTitle\"\n          }), \" hook has been consolidated into the \", _jsx(_components.code, {\n            children: \"useDocumentInfo\"\n          }), \" hook. Instead, you can get title directly from document info context:\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"'use client'\\n- import { useTitle } from 'payload'\\n+ import { useDocumentInfo } from '@payloadcms/ui'\\n\\nexport const MyComponent = () =\u003e {\\n- const title = useTitle()\\n+ const { title } = useDocumentInfo()\\n\\n  // ...\\n}\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"The \", _jsx(_components.code, {\n            children: \"useDocumentInfo\"\n          }), \" hook no longer returns \", _jsx(_components.code, {\n            children: \"collection\"\n          }), \" or \", _jsx(_components.code, {\n            children: \"global\"\n          }), \". Instead, various properties of the config are passed, like \", _jsx(_components.code, {\n            children: \"collectionSlug\"\n          }), \" and \", _jsx(_components.code, {\n            children: \"globalSlug\"\n          }), \". You can use these to access a client-side config, if needed, through the \", _jsx(_components.code, {\n            children: \"useConfig\"\n          }), \" hook (see next bullet).\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"'use client'\\nimport { useDocumentInfo } from '@payloadcms/ui'\\n\\nexport const MyComponent = () =\u003e {\\n  const {\\n-   collection,\\n-   global,\\n+   collectionSlug,\\n+   globalSlug\\n  } = useDocumentInfo()\\n\\n  // ...\\n}\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"The \", _jsx(_components.code, {\n            children: \"useConfig\"\n          }), \" hook now returns a \", _jsx(_components.code, {\n            children: \"ClientConfig\"\n          }), \" and not a \", _jsx(_components.code, {\n            children: \"SanitizedConfig\"\n          }), \". This is because the config itself is not serializable and so it is not able to be thread through to the client. This means that all non-serializable props have been omitted from the Client Config, such as \", _jsx(_components.code, {\n            children: \"db\"\n          }), \", \", _jsx(_components.code, {\n            children: \"bundler\"\n          }), \", etc.\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"'use client'\\n- import { useConfig } from 'payload'\\n+ import { useConfig } from '@payloadcms/ui'\\n\\nexport const MyComponent = () =\u003e {\\n- const config = useConfig() // used to be a 'SanitizedConfig'\\n+ const { config } = useConfig() // now is a 'ClientConfig'\\n\\n  // ...\\n}\\n\"\n          })\n        }), \"\\n\", _jsxs(_components.p, {\n          children: [\"For more details, see the \", _jsx(_components.a, {\n            href: \"https://payloadcms.com/docs/admin/custom-components/overview#accessing-the-payload-config\",\n            children: \"Documentation\"\n          }), \".\"]\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"The \", _jsx(_components.code, {\n            children: \"useCollapsible\"\n          }), \" hook has had slight changes to its property names. \", _jsx(_components.code, {\n            children: \"collapsed\"\n          }), \" is now \", _jsx(_components.code, {\n            children: \"isCollapsed\"\n          }), \" and \", _jsx(_components.code, {\n            children: \"withinCollapsible\"\n          }), \" is now \", _jsx(_components.code, {\n            children: \"isWithinCollapsible\"\n          }), \".\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"'use client'\\nimport { useCollapsible } from '@payloadcms/ui'\\n\\nexport const MyComponent = () =\u003e {\\n- const { collapsed, withinCollapsible } = useCollapsible()\\n+ const { isCollapsed, isWithinCollapsible } = useCollapsible()\\n}\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"The \", _jsx(_components.code, {\n            children: \"useTranslation\"\n          }), \" hook no longer takes any options, any translations using shorthand accessors will need to use the entire \", _jsx(_components.code, {\n            children: \"group:key\"\n          })]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"'use client'\\n- import { useTranslation } from 'payload'\\n+ import { useTranslation } from '@payloadcms/ui'\\n\\nexport const MyComponent = () =\u003e {\\n- const { i18n, t } = useTranslation('general')\\n+ const { i18n, t } = useTranslation()\\n\\n- return \u003cp\u003e{t('cancel')}\u003c/p\u003e\\n+ return \u003cp\u003e{t('general:cancel')}\u003c/p\u003e\\n}\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\"]\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"Types\"\n    }), \"\\n\", _jsxs(_components.ol, {\n      children: [\"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"The \", _jsx(_components.code, {\n            children: \"Fields\"\n          }), \" type was renamed to \", _jsx(_components.code, {\n            children: \"FormState\"\n          }), \" for improved semantics. If you were previously importing this type in your own application, simply change the import name:\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"- import type { Fields } from 'payload'\\n+ import type { FormState } from 'payload'\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"The \", _jsx(_components.code, {\n            children: \"BlockField\"\n          }), \" and related types have been renamed to \", _jsx(_components.code, {\n            children: \"BlocksField\"\n          }), \" for semantic accuracy.\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"- import type { BlockField, BlockFieldProps } from 'payload'\\n+ import type { BlocksField, BlocksFieldProps } from 'payload'\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\"]\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"Email Adapters\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Email functionality has been abstracted out into email adapters.\"\n    }), \"\\n\", _jsxs(_components.ul, {\n      children: [\"\\n\", _jsxs(_components.li, {\n        children: [\"All existing nodemailer functionality was abstracted into the \", _jsx(_components.code, {\n          children: \"@payloadcms/email-nodemailer\"\n        }), \" package\"]\n      }), \"\\n\", _jsx(_components.li, {\n        children: \"No longer configured with ethereal.email by default.\"\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"Ability to pass email into the \", _jsx(_components.code, {\n          children: \"init\"\n        }), \" function has been removed.\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"Warning will be given on startup if email not configured. Any \", _jsx(_components.code, {\n          children: \"sendEmail\"\n        }), \" call will simply log the To address and subject.\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"A Resend adapter is now also available via the \", _jsx(_components.code, {\n          children: \"@payloadcms/email-resend\"\n        }), \" package.\"]\n      }), \"\\n\"]\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"If you used the default email configuration in 2.0 (nodemailer):\"\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-tsx\",\n        children: \"// ❌ Before\\n\\n// via payload.init\\npayload.init({\\n  email: {\\n    transport: someNodemailerTransport\\n    fromName: 'hello',\\n    fromAddress: 'hello@example.com',\\n  },\\n})\\n// or via email in payload.config.ts\\nexport default buildConfig({\\n  email: {\\n    transport: someNodemailerTransport\\n    fromName: 'hello',\\n    fromAddress: 'hello@example.com',\\n  },\\n})\\n\\n// ✅ After\\n\\n// Using new nodemailer adapter package\\n\\nimport { nodemailerAdapter } from '@payloadcms/email-nodemailer'\\n\\nexport default buildConfig({\\n  email: nodemailerAdapter() // This will be the old ethereal.email functionality\\n})\\n\\n// or pass in transport\\n\\nexport default buildConfig({\\n  email: nodemailerAdapter({\\n    defaultFromAddress: 'info@payloadcms.com',\\n    defaultFromName: 'Payload',\\n    transport: await nodemailer.createTransport({\\n      host: process.env.SMTP_HOST,\\n      port: 587,\\n      auth: {\\n        user: process.env.SMTP_USER,\\n        pass: process.env.SMTP_PASS,\\n      },\\n    })\\n  })\\n})\\n\"\n      })\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Removal of rate-limiting\"\n    }), \"\\n\", _jsxs(_components.ul, {\n      children: [\"\\n\", _jsx(_components.li, {\n        children: \"Now only available if using custom server and using express or similar\"\n      }), \"\\n\"]\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"Plugins\"\n    }), \"\\n\", _jsxs(_components.ol, {\n      children: [\"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [_jsx(_components.em, {\n            children: \"All\"\n          }), \" plugins have been standardized to use \", _jsx(_components.em, {\n            children: \"named exports\"\n          }), \" (as opposed to default exports). Most also have a suffix of \", _jsx(_components.code, {\n            children: \"Plugin\"\n          }), \" to make it clear what is being imported.\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"- import seo from '@payloadcms/plugin-seo'\\n+ import { seoPlugin } from '@payloadcms/plugin-seo'\\n\\n- import stripePlugin from '@payloadcms/plugin-stripe'\\n+ import { stripePlugin } from '@payloadcms/plugin-stripe'\\n\\n// and so on for every plugin\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\"]\n    }), \"\\n\", _jsx(_components.h2, {\n      children: _jsx(_components.code, {\n        children: \"@payloadcms/plugin-cloud-storage\"\n      })\n    }), \"\\n\", _jsxs(_components.ul, {\n      children: [\"\\n\", _jsxs(_components.li, {\n        children: [\"The adapters that are exported from \", _jsx(_components.code, {\n          children: \"@payloadcms/plugin-cloud-storage\"\n        }), \" (ie. \", _jsx(_components.code, {\n          children: \"@payloadcms/plugin-cloud-storage/s3\"\n        }), \") package have been removed.\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"New \", _jsx(_components.em, {\n          children: \"standalone\"\n        }), \" packages have been created for each of the existing adapters. Please see the documentation for the one that you use.\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [_jsx(_components.code, {\n          children: \"@payloadcms/plugin-cloud-storage\"\n        }), \" is still fully supported but should only to be used if you are providing a custom adapter that does not have a dedicated package.\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [\"If you have created a custom adapter, the type must now provide a \", _jsx(_components.code, {\n          children: \"name\"\n        }), \" property.\"]\n      }), \"\\n\"]\n    }), \"\\n\", _jsxs(_components.table, {\n      children: [_jsx(_components.thead, {\n        children: _jsxs(_components.tr, {\n          children: [_jsx(_components.th, {\n            children: \"Service\"\n          }), _jsx(_components.th, {\n            children: \"Package\"\n          })]\n        })\n      }), _jsxs(_components.tbody, {\n        children: [_jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: \"Vercel Blob\"\n          }), _jsx(_components.td, {\n            children: _jsx(_components.a, {\n              href: \"https://github.com/payloadcms/payload/tree/main/packages/storage-vercel-blob\",\n              children: \"https://github.com/payloadcms/payload/tree/main/packages/storage-vercel-blob\"\n            })\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: \"AWS S3\"\n          }), _jsx(_components.td, {\n            children: _jsx(_components.a, {\n              href: \"https://github.com/payloadcms/payload/tree/main/packages/storage-s3\",\n              children: \"https://github.com/payloadcms/payload/tree/main/packages/storage-s3\"\n            })\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: \"Azure\"\n          }), _jsx(_components.td, {\n            children: _jsx(_components.a, {\n              href: \"https://github.com/payloadcms/payload/tree/main/packages/storage-azure\",\n              children: \"https://github.com/payloadcms/payload/tree/main/packages/storage-azure\"\n            })\n          })]\n        }), _jsxs(_components.tr, {\n          children: [_jsx(_components.td, {\n            children: \"Google Cloud Storage\"\n          }), _jsx(_components.td, {\n            children: _jsx(_components.a, {\n              href: \"https://github.com/payloadcms/payload/tree/main/packages/storage-gcs\",\n              children: \"https://github.com/payloadcms/payload/tree/main/packages/storage-gcs\"\n            })\n          })]\n        })]\n      })]\n    }), \"\\n\", _jsx(_components.pre, {\n      children: _jsx(_components.code, {\n        className: \"language-tsx\",\n        children: \"// ❌ Before (required peer dependencies depending on adapter)\\n\\nimport { cloudStorage } from '@payloadcms/plugin-cloud-storage'\\nimport { s3Adapter } from '@payloadcms/plugin-cloud-storage/s3'\\n\\nplugins: [\\n    cloudStorage({\\n      collections: {\\n        media: {\\n          adapter: s3Adapter({\\n            bucket: process.env.S3_BUCKET,\\n            config: {\\n              credentials: {\\n                accessKeyId: process.env.S3_ACCESS_KEY_ID,\\n                secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,\\n              },\\n              region: process.env.S3_REGION,\\n            },\\n          }),\\n        },\\n      },\\n    }),\\n  ],\\n\\n // ✅ After\\n\\n import { s3Storage } from '@payloadcms/storage-s3'\\n\\n plugins: [\\n    s3Storage({\\n      collections: {\\n        media: true,\\n      },\\n      bucket: process.env.S3_BUCKET,\\n      config: {\\n        credentials: {\\n          accessKeyId: process.env.S3_ACCESS_KEY_ID,\\n          secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,\\n        },\\n        region: process.env.S3_REGION,\\n      },\\n    }),\\n  ],\\n\"\n      })\n    }), \"\\n\", _jsx(_components.h2, {\n      children: _jsx(_components.code, {\n        children: \"@payloadcms/plugin-form-builder\"\n      })\n    }), \"\\n\", _jsxs(_components.ol, {\n      children: [\"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"Field overrides for form and form submission collections now accept a function with a \", _jsx(_components.code, {\n            children: \"defaultFields\"\n          }), \" inside the args instead of an array of config\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// payload.config.ts\\nimport { buildConfig } from 'payload'\\nimport { formBuilderPlugin } from '@payloadcms/plugin-form-builder'\\n\\nconst config = buildConfig({\\n  // ...\\n  plugins: formBuilderPlugin({\\n-   fields: [\\n-     {\\n-       name: 'custom',\\n-       type: 'text',\\n-     }\\n-   ],\\n+   fields: ({ defaultFields }) =\u003e {\\n+     return [\\n+       ...defaultFields,\\n+       {\\n+         name: 'custom',\\n+         type: 'text',\\n+       },\\n+     ]\\n+   }\\n  })\\n})\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\"]\n    }), \"\\n\", _jsx(_components.h2, {\n      children: _jsx(_components.code, {\n        children: \"@payloadcms/plugin-redirects\"\n      })\n    }), \"\\n\", _jsxs(_components.ol, {\n      children: [\"\\n\", _jsxs(_components.li, {\n        children: [\"\\n\", _jsxs(_components.p, {\n          children: [\"Field overrides for the redirects collection now accepts a function with a \", _jsx(_components.code, {\n            children: \"defaultFields\"\n          }), \" inside the args instead of an array of config\"]\n        }), \"\\n\", _jsx(_components.pre, {\n          children: _jsx(_components.code, {\n            className: \"language-diff\",\n            children: \"// payload.config.ts\\nimport { buildConfig } from 'payload'\\nimport { redirectsPlugin } from '@payloadcms/plugin-redirects'\\n\\nconst config = buildConfig({\\n  // ...\\n  plugins: redirectsPlugin({\\n-   fields: [\\n-     {\\n-       name: 'custom',\\n-       type: 'text',\\n-     }\\n-   ],\\n+   fields: ({ defaultFields }) =\u003e {\\n+     return [\\n+       ...defaultFields,\\n+       {\\n+         name: 'custom',\\n+         type: 'text',\\n+       },\\n+     ]\\n+   }\\n  })\\n})\\n\"\n          })\n        }), \"\\n\"]\n      }), \"\\n\"]\n    }), \"\\n\", _jsx(_components.h2, {\n      children: _jsx(_components.code, {\n        children: \"@payloadcms/richtext-lexical\"\n      })\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"If you have custom features for \", _jsx(_components.code, {\n        children: \"@payloadcms/richtext-lexical\"\n      }), \" you will need to migrate your code to the new API. Read more about the new API in the \", _jsx(_components.a, {\n        href: \"https://payloadcms.com/docs/rich-text/building-custom-features\",\n        children: \"documentation\"\n      }), \".\"]\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"Reserved Field names\"\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"Payload reserves certain field names for internal use. Using any of the following names in your collections or globals will result in those fields being sanitized from the config, which can cause deployment errors. Ensure that any conflicting fields are renamed before migrating.\"\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"General Reserved Names\"\n    }), \"\\n\", _jsxs(_components.ul, {\n      children: [\"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"file\"\n        })\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [_jsx(_components.code, {\n          children: \"_id\"\n        }), \" (MongoDB only)\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [_jsx(_components.code, {\n          children: \"__v\"\n        }), \" (MongoDB only)\"]\n      }), \"\\n\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [_jsx(_components.strong, {\n        children: \"Important Note\"\n      }), \": It is recommended to avoid using field names with an underscore (\", _jsx(_components.code, {\n        children: \"_\"\n      }), \") prefix unless explicitly required by a plugin. Payload uses this prefix for internal columns, which can lead to conflicts in certain SQL conditions. The following are examples of reserved internal columns (this list is not exhaustive and other internal fields may also apply):\"]\n    }), \"\\n\", _jsxs(_components.ul, {\n      children: [\"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"_order\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"_path\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"_uuid\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"_parent_id\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"_locale\"\n        })\n      }), \"\\n\"]\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Auth-Related Reserved Names\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"These are restricted if your collection uses \", _jsx(_components.code, {\n        children: \"auth: true\"\n      }), \" and does not have \", _jsx(_components.code, {\n        children: \"disableAuthStrategy: true\"\n      }), \":\"]\n    }), \"\\n\", _jsxs(_components.ul, {\n      children: [\"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"salt\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"hash\"\n        })\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [_jsx(_components.code, {\n          children: \"apiKey\"\n        }), \" (when \", _jsx(_components.code, {\n          children: \"auth.useAPIKey: true\"\n        }), \" is enabled)\"]\n      }), \"\\n\", _jsxs(_components.li, {\n        children: [_jsx(_components.code, {\n          children: \"useAPIKey\"\n        }), \" (when \", _jsx(_components.code, {\n          children: \"auth.useAPIKey: true\"\n        }), \" is enabled)\"]\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"resetPasswordToken\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"resetPasswordExpiration\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"password\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"email\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"username\"\n        })\n      }), \"\\n\"]\n    }), \"\\n\", _jsx(_components.h3, {\n      children: \"Upload-Related Reserved Names\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"These apply if your collection has \", _jsx(_components.code, {\n        children: \"upload: true\"\n      }), \" configured:\"]\n    }), \"\\n\", _jsxs(_components.ul, {\n      children: [\"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"filename\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"mimetype\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"filesize\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"width\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"height\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"focalX\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"focalY\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"url\"\n        })\n      }), \"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"thumbnailURL\"\n        })\n      }), \"\\n\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"If \", _jsx(_components.code, {\n        children: \"imageSizes\"\n      }), \" is configured, the following are also reserved:\"]\n    }), \"\\n\", _jsxs(_components.ul, {\n      children: [\"\\n\", _jsx(_components.li, {\n        children: _jsx(_components.code, {\n          children: \"sizes\"\n        })\n      }), \"\\n\"]\n    }), \"\\n\", _jsx(_components.p, {\n      children: \"If any of these names are found in your collection / global fields, update them before migrating to avoid unexpected issues.\"\n    }), \"\\n\", _jsx(_components.h2, {\n      children: \"Upgrade from previous beta\"\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Reference this \", _jsx(_components.a, {\n        href: \"https://payload-releases-filter.vercel.app/?version=3\u0026from=152429656\u0026to=188243150\u0026sort=asc\u0026breaking=on\",\n        children: \"community-made site\"\n      }), \". Set your version, sort by oldest first, enable breaking changes only.\"]\n    }), \"\\n\", _jsxs(_components.p, {\n      children: [\"Then go through each one of the breaking changes and make the adjustments. You can optionally reference the \", _jsx(_components.a, {\n        href: \"https://github.com/payloadcms/payload/tree/main/templates/blank\",\n        children: \"blank template\"\n      }), \" for how things should end up.\"]\n    })]\n  });\n}\nfunction MDXContent(props = {}) {\n  const {wrapper: MDXLayout} = Object.assign({}, _provideComponents(), props.components);\n  return MDXLayout ? _jsx(MDXLayout, Object.assign({}, props, {\n    children: _jsx(_createMdxContent, props)\n  })) : _createMdxContent(props);\n}\nreturn {\n  default: MDXContent\n};\n","frontmatter":{},"scope":{}}},"__N_SSG":true},"page":"/docs/[...slug]","query":{"slug":["migration-guide","overview"]},"buildId":"rEpVRygLyV6yJ0i_Ohw0C","isFallback":false,"gsp":true,"scriptLoader":[]}</script></body></html>
