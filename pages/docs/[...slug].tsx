@@ -7,6 +7,8 @@ import Banner from "../../components/Banner";
 import MDXTable from "../../components/MDXTable";
 import YouTube from "../../components/YouTube";
 import LightDarkImage from "../../components/LightDarkImage";
+import RestExamples from "../../components/RestExamples";
+import TableWithDrawers from "../../components/TableWithDrawers";
 
 interface DocPageProps {
   frontMatter: {
@@ -21,6 +23,8 @@ const components = {
   Banner,
   YouTube,
   LightDarkImage,
+  RestExamples,
+  TableWithDrawers,
   // Add table components
   table: MDXTable.table,
   th: MDXTable.th,
